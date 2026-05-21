@@ -23,6 +23,11 @@ GOLD_DIM     = "#5a4820"
 BORDER       = "#2a2a2a"
 BORDER_GOLD  = "#5a4820"
 
+RED          = "#7a1a1a"
+RED_BRIGHT   = "#c03030"
+GREEN        = "#1a5a1a"
+GREEN_BRIGHT = "#30a030"
+
 # Backward compat aliases
 GOLD_GLOW    = (200, 150, 40)
 BORDER_BRIGHT = GOLD_DIM
