@@ -55,15 +55,18 @@ class ParticleSystem:
         self.count  = count
         self.delay  = max(16, 1000 // fps)
         self.running = True
-        self.w = canvas.winfo_width()  or 800
-        self.h = canvas.winfo_height() or 600
+        self.w = 800
+        self.h = 600
         self._spirits: list = []
+        self._spawned = False
         canvas.bind("<Configure>", self._on_resize, add="+")
-        self._spawn_all()
         self._tick()
 
     def _on_resize(self, e):
         self.w, self.h = e.width, e.height
+        if not self._spawned and e.width > 1 and e.height > 1:
+            self._spawn_all()
+            self._spawned = True
 
     def _spawn_all(self):
         for _ in range(self.count):

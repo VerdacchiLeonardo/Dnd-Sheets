@@ -18,6 +18,7 @@ class HomeScreen(ctk.CTkFrame):
         self.on_new = on_new
         self.on_load = on_load
         self._photos: list = []   # keep references alive
+        self._btn_widgets: list = []
         self._fonts = fonts()
         self._build()
 
@@ -36,6 +37,9 @@ class HomeScreen(ctk.CTkFrame):
         w, h = event.width, event.height
         self.canvas.delete("static")
         self._photos.clear()
+        for btn in self._btn_widgets:
+            btn.destroy()
+        self._btn_widgets.clear()
         self._draw_static(w, h)
 
     # ── Drawing ──────────────────────────────────────────────────────────────
@@ -94,6 +98,7 @@ class HomeScreen(ctk.CTkFrame):
             border_color=GOLD, corner_radius=4,
             command=self.on_new,
         )
+        self._btn_widgets.append(btn1)
         cv.create_window(w // 2, btn_y1, window=btn1, tags="static")
 
         btn2 = ctk.CTkButton(
@@ -106,6 +111,7 @@ class HomeScreen(ctk.CTkFrame):
             border_color="#504030", corner_radius=4,
             command=self.on_load,
         )
+        self._btn_widgets.append(btn2)
         cv.create_window(w // 2, btn_y2, window=btn2, tags="static")
 
         # ── Decorative rune ring ──
