@@ -50,7 +50,7 @@ class SheetScreen(ctk.CTkFrame):
         self._panel_frame: ctk.CTkFrame | None = None
         self._current_panel: ctk.CTkScrollableFrame | None = None
         self._current_section_idx: int | None = None
-        self._w = self._h = 0
+        self._cw = self._ch = 0
         self._panels: dict = {}
         self._build()
 
@@ -135,7 +135,7 @@ class SheetScreen(ctk.CTkFrame):
 
     # ── Resize -> reposition compass ──────────────────────────────────────────
     def _on_resize(self, e: tk.Event):
-        self._w, self._h = e.width, e.height
+        self._cw, self._ch = e.width, e.height
         r = min(e.width, e.height) * 0.38
         cx, cy = e.width // 2, e.height // 2
         self._compass.layout(cx, cy, r)
@@ -163,7 +163,7 @@ class SheetScreen(ctk.CTkFrame):
         self._place_panel(idx)
 
     def _place_panel(self, idx: int):
-        w, h = self._w, self._h
+        w, h = self._cw, self._ch
         if w == 0 or h == 0:
             return
 
