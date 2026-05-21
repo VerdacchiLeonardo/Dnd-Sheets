@@ -1,0 +1,6 @@
+@echo off
+echo Installazione dipendenze in corso...
+pip install customtkinter Pillow fonttools brotli >nul 2>&1
+echo Avvio D&D Schede Personaggio...
+python main.py
+pause
