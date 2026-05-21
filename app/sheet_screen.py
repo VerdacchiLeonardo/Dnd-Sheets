@@ -1,10 +1,12 @@
 """
-Character sheet screen: compass wheel on the left, section panels on the right.
+Character sheet: full-screen compass with radial panel positioning.
+Panel appears at the edge corresponding to the selected compass section.
 """
+import math
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog
 import customtkinter as ctk
-from PIL import ImageTk
+from PIL import Image, ImageTk
 
 from app.theme import BG, BG_PANEL, GOLD, GOLD_BRIGHT, GOLD_DIM, TEXT, TEXT_DIM, BORDER, fonts
 from app.compass import CompassWidget, SECTIONS
@@ -19,6 +21,24 @@ from app.panels.equipment_panel import EquipmentPanel
 from app.panels.spells_panel import SpellsPanel
 from app.panels.notes_panel import NotesPanel
 
+PANEL_W = 400
+PANEL_H_RATIO = 0.82   # fraction of screen height
+PANEL_MARGIN = 14
+
+# Direction for each section (index 0=top, goes clockwise)
+# Returns (anchor_x_factor, anchor_y_factor)
+# 0.0 = left/top edge, 1.0 = right/bottom edge, 0.5 = center
+_PANEL_ANCHORS = [
+    (0.5,  0.0),   # 0 top       -> panel at top-center
+    (1.0,  0.0),   # 1 top-right -> panel at top-right
+    (1.0,  0.5),   # 2 right     -> panel at right-center
+    (1.0,  1.0),   # 3 bot-right -> panel at bottom-right
+    (0.5,  1.0),   # 4 bottom    -> panel at bottom-center
+    (0.0,  1.0),   # 5 bot-left  -> panel at bottom-left
+    (0.0,  0.5),   # 6 left      -> panel at left-center
+    (0.0,  0.0),   # 7 top-left  -> panel at top-left
+]
+
 
 class SheetScreen(ctk.CTkFrame):
     def __init__(self, master, app):
@@ -27,80 +47,68 @@ class SheetScreen(ctk.CTkFrame):
         self.app = app
         self._photos: list = []
         self._compass: CompassWidget | None = None
-        self._current_panel: ctk.CTkFrame | None = None
-        self._fonts = fonts()
+        self._panel_frame: ctk.CTkFrame | None = None
+        self._current_panel: ctk.CTkScrollableFrame | None = None
+        self._current_section_idx: int | None = None
+        self._w = self._h = 0
         self._panels: dict = {}
         self._build()
 
-    # ── Layout ───────────────────────────────────────────────────────────────
+    # ── Build ────────────────────────────────────────────────────────────────
     def _build(self):
-        # ── Top header bar ──
-        hdr = ctk.CTkFrame(self, height=50, fg_color="#0e0c08",
+        # Top header
+        hdr = ctk.CTkFrame(self, height=46, fg_color="#0a0808",
                            border_width=1, border_color=BORDER)
         hdr.pack(fill="x")
         hdr.pack_propagate(False)
 
-        def hdr_field(label, key, width, is_str=True):
+        def hf(label, key, w):
             ctk.CTkLabel(hdr, text=label, font=("Arial", 11, "bold"),
-                         text_color=GOLD).pack(side="left", padx=(14, 3))
+                         text_color=GOLD).pack(side="left", padx=(12, 2))
             ctk.CTkEntry(hdr, textvariable=self.app.vars[key], font=("Arial", 12),
-                         width=width,
-                         fg_color="#1a1408", text_color=TEXT,
+                         width=w, fg_color="#110e04", text_color=TEXT,
                          border_color=BORDER, border_width=1,
                          corner_radius=3).pack(side="left", padx=(0, 6))
 
-        hdr_field("Nome:",    "name",   200)
-        hdr_field("Lvl:",     "level",   40)
-        hdr_field("Classe:",  "class_", 130)
-        hdr_field("Razza:",   "race",   110)
+        hf("Nome:", "name", 190)
+        hf("Lvl:", "level", 38)
+        hf("Classe:", "class_", 120)
+        hf("Razza:", "race", 100)
 
-        # Save / Load buttons in header
-        ctk.CTkButton(hdr, text="Salva", width=70, height=30, font=("Arial", 11),
-                      fg_color="#2a1a08", hover_color="#5a3a10",
-                      text_color=GOLD_BRIGHT, border_width=1, border_color=BORDER,
-                      command=self.app.save_character).pack(side="right", padx=6)
+        for lbl, cmd, fc, hc in [
+            ("Salva", self.app.save_character, "#2a1a08", "#5a3a10"),
+            ("Apri",  self.app.open_character, "#141414", "#282828"),
+            ("Nuovo", self.app.new_character,  "#141414", "#282828"),
+            ("<- Personaggi", self.app.show_library, "#0a0814", "#181828"),
+        ]:
+            btn_color = GOLD_BRIGHT if lbl == "Salva" else TEXT
+            btn_width = 110 if lbl == "<- Personaggi" else 80
+            ctk.CTkButton(hdr, text=lbl, width=btn_width,
+                          height=28, font=("Arial", 11),
+                          fg_color=fc, hover_color=hc,
+                          text_color=btn_color,
+                          border_width=1, border_color=BORDER,
+                          command=cmd).pack(side="right", padx=3)
 
-        ctk.CTkButton(hdr, text="Apri", width=70, height=30, font=("Arial", 11),
-                      fg_color="#181818", hover_color="#303030",
-                      text_color=TEXT, border_width=1, border_color=BORDER,
-                      command=self.app.open_character).pack(side="right", padx=2)
+        # Full-screen canvas body
+        self._body = ctk.CTkFrame(self, fg_color=BG)
+        self._body.pack(fill="both", expand=True)
 
-        ctk.CTkButton(hdr, text="Nuovo", width=70, height=30, font=("Arial", 11),
-                      fg_color="#181818", hover_color="#303030",
-                      text_color=TEXT, border_width=1, border_color=BORDER,
-                      command=self.app.new_character).pack(side="right", padx=2)
+        self._canvas = tk.Canvas(self._body, bg=BG, highlightthickness=0)
+        self._canvas.place(relx=0, rely=0, relwidth=1, relheight=1)
 
-        # ── Main body: compass (left) + panel (right) ──
-        body = ctk.CTkFrame(self, fg_color="transparent")
-        body.pack(fill="both", expand=True)
+        self._particles = ParticleSystem(self._canvas, count=70, fps=30)
+        self._compass   = CompassWidget(self._canvas, self._on_section_select)
 
-        # Compass area (canvas)
-        self._cv_frame = ctk.CTkFrame(body, fg_color=BG, width=420)
-        self._cv_frame.pack(side="left", fill="y")
-        self._cv_frame.pack_propagate(False)
+        self._canvas.bind("<Configure>", self._on_resize)
 
-        self._canvas = tk.Canvas(self._cv_frame, bg=BG, highlightthickness=0)
-        self._canvas.pack(fill="both", expand=True)
-
-        # Particle background in compass area
-        self._particles = ParticleSystem(self._canvas, count=55, fps=30)
-
-        self._canvas.bind("<Configure>", self._on_cv_resize)
-
-        # Panel area (right)
-        self._panel_frame = ctk.CTkFrame(body, fg_color=BG_PANEL,
-                                          border_width=1, border_color=BORDER)
-        self._panel_frame.pack(side="left", fill="both", expand=True)
-
-        # Welcome label (shown when no section selected)
-        self._welcome = ctk.CTkLabel(
-            self._panel_frame,
-            text="Seleziona una sezione\ndal compasso",
-            font=("Arial", 16), text_color=GOLD_DIM,
+        # Panel overlay container (placed dynamically)
+        self._panel_frame = ctk.CTkFrame(
+            self._body, fg_color=BG_PANEL,
+            border_width=1, border_color=BORDER,
+            corner_radius=8,
         )
-        self._welcome.pack(expand=True)
-
-        # Build all panels (hidden initially)
+        # Build all section panels inside it
         self._panels = {
             "class":     ClassPanel(self._panel_frame, self.app),
             "race":      RacePanel(self._panel_frame, self.app),
@@ -111,106 +119,123 @@ class SheetScreen(ctk.CTkFrame):
             "spells":    SpellsPanel(self._panel_frame, self.app),
             "notes":     NotesPanel(self._panel_frame, self.app),
         }
-        for panel in self._panels.values():
-            panel.pack_forget()
+        for p in self._panels.values():
+            p.pack_forget()
 
-    # ── Canvas resize → redraw compass ───────────────────────────────────────
-    def _on_cv_resize(self, event: tk.Event):
-        w, h = event.width, event.height
-        self._canvas.delete("compass_bg")
-        self._canvas.delete("compass_seg")
-        self._canvas.delete("compass_sym")
-        self._canvas.delete("compass_lbl")
-        self._canvas.delete("compass_center")
-        self._canvas.delete("compass_ring")
-        self._canvas.delete("char_name_img")
-        self._photos.clear()
-
-        r = min(w, h) * 0.36
-        cx, cy = w // 2, int(h * 0.50)
-
-        if self._compass is None:
-            self._compass = CompassWidget(self._canvas, self._on_section_select, cx, cy, r)
-        else:
-            self._compass.reposition(cx, cy, r)
-
-        # Character name in center circle
-        self._draw_center_name(cx, cy, r * 0.22)
-
-        # Small decorative text at bottom
-        self._canvas.delete("cv_footer")
-        self._canvas.create_text(
-            w // 2, h - 14,
-            text="Clicca una sezione per modificarla",
-            fill=GOLD_DIM, font=("Arial", 9),
-            tags="cv_footer",
+        # Close button on panel
+        self._close_btn = ctk.CTkButton(
+            self._panel_frame, text="X", width=28, height=28,
+            fg_color="transparent", hover_color="#2a0a0a",
+            text_color=TEXT_DIM, font=("Arial", 13),
+            command=self._hide_panel,
         )
 
-        # Ensure particles stay below
-        self._canvas.tag_lower("particle")
+        # Image area overlaid at bottom of compass center
+        self._char_img_label: ctk.CTkLabel | None = None
 
-    def _draw_center_name(self, cx: int, cy: int, r: float):
-        name = self.app.vars["name"].get() or "Personaggio"
-        short = name[:10] + "…" if len(name) > 10 else name
-        img = glow_image(
-            short,
-            self._fonts["small"],
-            img_size=(int(r * 2.4), int(r * 1.2)),
-            text_color=(220, 200, 140),
-            glow_color=(140, 90, 10),
-            glow_radius=5,
-            glow_strength=1,
-            bg_color=(8, 8, 8),
-        )
-        ph = ImageTk.PhotoImage(img)
-        self._photos.append(ph)
-        self._canvas.create_image(cx, cy, image=ph, tags="char_name_img")
+    # ── Resize -> reposition compass ──────────────────────────────────────────
+    def _on_resize(self, e: tk.Event):
+        self._w, self._h = e.width, e.height
+        r = min(e.width, e.height) * 0.38
+        cx, cy = e.width // 2, e.height // 2
+        self._compass.layout(cx, cy, r)
+        self._compass.update_center_name(self.app.vars["name"].get())
+        # Reposition open panel if any
+        if self._current_section_idx is not None and self._panel_frame.winfo_ismapped():
+            self._place_panel(self._current_section_idx)
 
-    # ── Section selection ─────────────────────────────────────────────────────
-    def _on_section_select(self, key: str):
-        # Hide current panel
-        if self._current_panel is not None:
+    # ── Section selection ────────────────────────────────────────────────────
+    def _on_section_select(self, idx: int, key: str):
+        # Toggle: click same section again -> hide
+        if idx == self._current_section_idx and self._panel_frame.winfo_ismapped():
+            self._hide_panel()
+            return
+
+        self._current_section_idx = idx
+        # Show the right panel
+        if self._current_panel:
             self._current_panel.pack_forget()
-        self._welcome.pack_forget()
-
         panel = self._panels.get(key)
         if panel:
             panel.pack(fill="both", expand=True)
             self._current_panel = panel
 
-    # ── Data collection helpers (used by app.window) ──────────────────────────
-    def get_equipment_text(self) -> str:
-        return self._panels["equipment"].get_text()
+        self._place_panel(idx)
 
-    def set_equipment_text(self, text: str):
-        self._panels["equipment"].set_text(text)
+    def _place_panel(self, idx: int):
+        w, h = self._w, self._h
+        if w == 0 or h == 0:
+            return
 
-    def get_spells_text(self) -> str:
-        return self._panels["spells"].get_spells()
+        ph = int(h * PANEL_H_RATIO)
+        ax, ay = _PANEL_ANCHORS[idx]
 
-    def set_spells_text(self, text: str):
-        self._panels["spells"].set_spells(text)
+        # X position
+        if ax < 0.3:    x = PANEL_MARGIN
+        elif ax > 0.7:  x = w - PANEL_W - PANEL_MARGIN
+        else:           x = w // 2 - PANEL_W // 2
 
-    def get_features(self) -> str:
-        return self._panels["notes"].get_features()
+        # Y position
+        if ay < 0.3:    y = PANEL_MARGIN
+        elif ay > 0.7:  y = h - ph - PANEL_MARGIN
+        else:           y = h // 2 - ph // 2
 
-    def set_features(self, t: str):
-        self._panels["notes"].set_features(t)
+        self._close_btn.place(relx=1.0, rely=0, anchor="ne", x=-4, y=4)
+        self._panel_frame.place(x=x, y=y, width=PANEL_W, height=ph)
+        # Animate slide in
+        self._slide_in(idx, x, y, PANEL_W, ph)
 
-    def get_backstory(self) -> str:
-        return self._panels["notes"].get_backstory()
+    def _slide_in(self, idx, tx, ty, pw, ph, step=0):
+        MAX = 10
+        if step >= MAX:
+            self._panel_frame.place(x=tx, y=ty, width=pw, height=ph)
+            return
+        ax, ay = _PANEL_ANCHORS[idx]
+        prog = (step / MAX) ** 0.5   # sqrt easing
+        offset = int(40 * (1 - prog))
+        ox = -offset if ax < 0.3 else (offset if ax > 0.7 else 0)
+        oy = -offset if ay < 0.3 else (offset if ay > 0.7 else 0)
+        self._panel_frame.place(x=tx+ox, y=ty+oy, width=pw, height=ph)
+        self._panel_frame.after(16, lambda: self._slide_in(idx, tx, ty, pw, ph, step+1))
 
-    def set_backstory(self, t: str):
-        self._panels["notes"].set_backstory(t)
+    def _hide_panel(self):
+        self._panel_frame.place_forget()
+        self._current_section_idx = None
 
-    def get_notes(self) -> str:
-        return self._panels["notes"].get_notes()
+    # ── Image support ─────────────────────────────────────────────────────────
+    def _update_center_image(self):
+        img_data = self.app.character_image
+        if not img_data:
+            return
+        try:
+            from character import decode_image_pil
+            img = decode_image_pil(img_data)
+            r_in = self._compass.r * 0.18
+            size = int(r_in * 2)
+            img = img.resize((size, size), Image.LANCZOS)
+            from PIL import ImageOps, ImageDraw
+            # Crop to circle
+            mask = Image.new("L", (size, size), 0)
+            ImageDraw.Draw(mask).ellipse((0, 0, size, size), fill=255)
+            img.putalpha(mask)
+            ph = ImageTk.PhotoImage(img)
+            self._photos.append(ph)
+            self._canvas.delete("char_img_canvas")
+            cx, cy = self._compass.cx, self._compass.cy
+            self._canvas.create_image(cx, cy, image=ph, tags="char_img_canvas")
+        except Exception:
+            pass
 
-    def set_notes(self, t: str):
-        self._panels["notes"].set_notes(t)
-
-    def get_attacks(self) -> list[dict]:
-        return self._panels["combat"].get_attacks()
-
-    def set_attacks(self, attacks: list[dict]):
-        self._panels["combat"].set_attacks(attacks)
+    # ── Data helpers ──────────────────────────────────────────────────────────
+    def get_equipment_text(self) -> str: return self._panels["equipment"].get_text()
+    def set_equipment_text(self, t: str): self._panels["equipment"].set_text(t)
+    def get_spells_text(self) -> str: return self._panels["spells"].get_spells()
+    def set_spells_text(self, t: str): self._panels["spells"].set_spells(t)
+    def get_features(self) -> str: return self._panels["notes"].get_features()
+    def set_features(self, t: str): self._panels["notes"].set_features(t)
+    def get_backstory(self) -> str: return self._panels["notes"].get_backstory()
+    def set_backstory(self, t: str): self._panels["notes"].set_backstory(t)
+    def get_notes(self) -> str: return self._panels["notes"].get_notes()
+    def set_notes(self, t: str): self._panels["notes"].set_notes(t)
+    def get_attacks(self) -> list: return self._panels["combat"].get_attacks()
+    def set_attacks(self, a: list): self._panels["combat"].set_attacks(a)

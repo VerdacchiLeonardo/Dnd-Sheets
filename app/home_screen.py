@@ -98,7 +98,7 @@ class HomeScreen(ctk.CTkFrame):
 
         btn2 = ctk.CTkButton(
             self.canvas,
-            text="  Carica Personaggio Esistente  ",
+            text="  I Miei Personaggi  ",
             width=340, height=46,
             font=("Arial", 14),
             fg_color="#181818", hover_color="#303030",

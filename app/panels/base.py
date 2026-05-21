@@ -103,3 +103,37 @@ class BasePanel(ctk.CTkScrollableFrame):
         box.insert("1.0", text)
         box.configure(state="disabled")
         return box
+
+    def image_picker_row(self, parent):
+        """Row with current image preview + upload button."""
+        frame = ctk.CTkFrame(parent, fg_color=BG_WIDGET, corner_radius=8,
+                             border_width=1, border_color=BORDER)
+        frame.pack(fill="x", padx=12, pady=8)
+
+        self._img_label = ctk.CTkLabel(frame, text="Nessuna immagine",
+                                       text_color=TEXT_DIM, font=("Arial", 11))
+        self._img_label.pack(pady=(8, 4))
+
+        ctk.CTkButton(
+            frame, text="Carica immagine personaggio...", width=220, height=32,
+            font=("Arial", 11),
+            fg_color="#1a1a2a", hover_color="#2a2a4a",
+            text_color=TEXT, border_width=1, border_color=BORDER,
+            command=self._pick_image,
+        ).pack(pady=(0, 8))
+        return frame
+
+    def _pick_image(self):
+        from tkinter import filedialog
+        path = filedialog.askopenfilename(
+            title="Seleziona immagine personaggio",
+            filetypes=[("Immagini", "*.png *.jpg *.jpeg *.webp *.gif"), ("Tutti", "*.*")],
+        )
+        if not path:
+            return
+        try:
+            from character import encode_image
+            self.app.character_image = encode_image(path)
+            self._img_label.configure(text="Immagine caricata", text_color="#50c050")
+        except Exception as e:
+            self._img_label.configure(text=f"Errore: {e}", text_color="#c05050")
