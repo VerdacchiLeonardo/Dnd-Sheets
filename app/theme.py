@@ -1,72 +1,67 @@
-"""
-Visual constants for the D&D app: colors, fonts, sizing.
-"""
+"""Visual constants: colors, fonts."""
 import os
 from PIL import ImageFont
 
 _BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FONTS_DIR = os.path.join(_BASE, "assets", "fonts")
+SAVES_DIR = os.path.join(_BASE, "saves")
 
-# ── Palette ─────────────────────────────────────────────────────────────────
-BG          = "#080808"
-BG_PANEL    = "#0c0c0c"
-BG_WIDGET   = "#161616"
-BG_ENTRY    = "#1a1408"
+# ── Palette ──────────────────────────────────────────────────────────────────
+BG           = "#080808"
+BG_PANEL     = "#0e0e0e"
+BG_WIDGET    = "#161616"
+BG_ENTRY     = "#111108"
 
-TEXT        = "#f0e6d3"
-TEXT_DIM    = "#9a8a70"
+TEXT         = "#f0f0f0"        # WHITE primario
+TEXT_DIM     = "#909090"
+TEXT_BRIGHT  = "#ffffff"
 
-GOLD        = "#c8a951"
-GOLD_BRIGHT = "#f5d680"
-GOLD_DIM    = "#6a5428"
-GOLD_GLOW   = (200, 150, 40)
+GOLD         = "#c8a951"
+GOLD_BRIGHT  = "#f5d680"
+GOLD_DIM     = "#5a4820"
 
-BLUE        = "#3a6fa8"
-BLUE_BRIGHT = "#6aaae8"
-BLUE_GLOW   = (60, 100, 200)
+BORDER       = "#2a2a2a"
+BORDER_GOLD  = "#5a4820"
 
-RED         = "#7a1a1a"
-RED_BRIGHT  = "#c03030"
+# Backward compat aliases
+GOLD_GLOW    = (200, 150, 40)
+BORDER_BRIGHT = GOLD_DIM
 
-BORDER      = "#2a1e08"
-BORDER_BRIGHT = "#6a5020"
-
-# Compass segment colors  (base, hover, selected)
+# Compass segment colors (base, hover, selected) — scuri con testo bianco
 SECTION_COLORS = [
-    ("#3a1010", "#7a2020", "#c03030"),  # Classe    – rosso
-    ("#102030", "#1a4060", "#2a70b0"),  # Razza     – blu
-    ("#103010", "#1a6030", "#2a9050"),  # Stats     – verde
-    ("#301010", "#602020", "#a03030"),  # Combatt.  – cremisi
-    ("#302010", "#604020", "#a07030"),  # Abilità   – arancio
-    ("#101030", "#202060", "#3030a0"),  # Equipag.  – viola
-    ("#201030", "#4a1060", "#8020a0"),  # Magie     – viola-rosa
-    ("#102020", "#1a5040", "#2a8060"),  # Note      – teal
+    ("#1a0808", "#3a1010", "#6a1818"),   # Classe    - rosso scuro
+    ("#08101a", "#10253a", "#1a4060"),   # Razza     - blu scuro
+    ("#081a08", "#10381a", "#1a6030"),   # Stats     - verde scuro
+    ("#1a0d08", "#381808", "#6a2808"),   # Combatt.  - arancio scuro
+    ("#150815", "#2a1030", "#4a1a55"),   # Abilità   - viola scuro
+    ("#08080f", "#10101e", "#1a1a3a"),   # Equipag.  - indaco scuro
+    ("#0f0815", "#201030", "#3a185a"),   # Magie     - viola-blu scuro
+    ("#08100d", "#10251a", "#1a3f2a"),   # Note      - verde-teal scuro
 ]
 
 PARTICLE_COLORS = [
-    (200, 150, 40),   # spirito dorato
-    (60, 110, 210),   # spirito blu
-    (180, 180, 255),  # spirito bianco-blu
-    (200, 60,  60),   # brace rossa
-    (100, 200, 180),  # spirito acqua
+    (200, 200, 255),  # spirito bianco-blu
+    (150, 180, 255),  # spirito celeste
+    (200, 150, 255),  # spirito viola
+    (255, 220, 150),  # spirito dorato
+    (150, 255, 200),  # spirito acqua
 ]
 
-# ── Font loading ─────────────────────────────────────────────────────────────
+
 def pil_font(name: str, size: int) -> ImageFont.FreeTypeFont:
-    path = os.path.join(FONTS_DIR, name)
     try:
-        return ImageFont.truetype(path, size)
+        return ImageFont.truetype(os.path.join(FONTS_DIR, name), size)
     except Exception:
         return ImageFont.load_default()
 
-# Pre-loaded PIL fonts
+
 def fonts():
     return {
         "title":    pil_font("Cinzel-Bold.ttf",    72),
-        "subtitle": pil_font("Cinzel-Regular.ttf", 36),
-        "heading":  pil_font("Cinzel-Bold.ttf",    22),
-        "label":    pil_font("Cinzel-Regular.ttf", 15),
-        "small":    pil_font("Cinzel-Regular.ttf", 12),
-        "compass":  pil_font("Cinzel-Bold.ttf",    14),
-        "icon":     pil_font("Cinzel-Bold.ttf",    28),
+        "subtitle": pil_font("Cinzel-Regular.ttf", 34),
+        "heading":  pil_font("Cinzel-Bold.ttf",    20),
+        "label":    pil_font("Cinzel-Regular.ttf", 14),
+        "small":    pil_font("Cinzel-Regular.ttf", 11),
+        "compass":  pil_font("Cinzel-Bold.ttf",    13),
+        "icon":     pil_font("Cinzel-Bold.ttf",    24),
     }

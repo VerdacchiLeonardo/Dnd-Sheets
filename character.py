@@ -1,5 +1,7 @@
 import math
 import json
+import base64
+import io
 
 ABILITY_KEYS = ["str", "dex", "con", "int", "wis", "cha"]
 
@@ -94,6 +96,9 @@ def default_character() -> dict:
         "features":  "",
         "backstory": "",
         "notes":     "",
+        "spells":    "",
+        # Image support
+        "character_image": "",  # base64 encoded
     }
     for i in range(len(SKILLS)):
         d[f"skill_{i}_prof"]   = False
@@ -114,3 +119,17 @@ def load_character(path: str) -> dict:
 def save_character(data: dict, path: str):
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+def encode_image(path: str) -> str:
+    from PIL import Image
+    img = Image.open(path)
+    img.thumbnail((400, 600))
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return base64.b64encode(buf.getvalue()).decode()
+
+
+def decode_image_pil(data: str):
+    from PIL import Image
+    return Image.open(io.BytesIO(base64.b64decode(data)))
