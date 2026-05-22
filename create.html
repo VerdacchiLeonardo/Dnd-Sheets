@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="theme-color" content="#080810">
+  <link rel="icon" type="image/png" href="assets/app-icon.png">
+  <link rel="apple-touch-icon" href="assets/app-icon.png">
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="D&amp;D Sheets">
+  <meta name="application-name" content="D&amp;D Sheets">
+  <title>Crea Personaggio — D&D Sheets</title>
+  <link rel="stylesheet" href="css/style.css?v=9">
+  <style>
+    /* Mobile bottom bar */
+    .mobile-bottom-bar {
+      display: none;
+    }
+    @media (max-width: 768px) {
+      .mobile-bottom-bar {
+        display: flex;
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        background: rgba(8,8,16,0.97);
+        border-top: 1px solid var(--border);
+        padding: 0.6rem 1rem;
+        gap: 0.5rem;
+        z-index: 40;
+        justify-content: center;
+      }
+      .page-wrap { padding-bottom: 70px; }
+    }
+
+    /* Step counter desktop */
+    .step-counter {
+      font-family: var(--font-h);
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    /* Compass page layout */
+    .compass-page-layout {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.5rem clamp(1rem, 4vw, 2rem) 2rem;
+      min-height: calc(100vh - 72px);
+      gap: 1.5rem;
+    }
+
+    .compass-page-header {
+      text-align: center;
+    }
+
+    /* Guide text above compass */
+    .compass-guide {
+      background: rgba(201,168,76,0.05);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 0.6rem 1.2rem;
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      font-style: italic;
+      text-align: center;
+      max-width: 500px;
+    }
+
+    /* Action buttons on desktop */
+    .compass-actions {
+      display: flex;
+      gap: 0.8rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body data-page="create">
+  <canvas id="particles-canvas"></canvas>
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <a href="characters.html" class="navbar-brand">← D&amp;D Sheets</a>
+    <div class="navbar-user">
+      <span class="navbar-username" id="nav-username"></span>
+      <button class="btn-logout">Esci</button>
+    </div>
+  </nav>
+
+  <div class="page-wrap" style="padding-top: 72px">
+    <div class="compass-page-layout">
+
+      <!-- Page header -->
+      <div class="compass-page-header animate-in">
+        <h2 class="shimmer" style="font-size:clamp(1.2rem,4vw,1.8rem)">Crea il tuo Personaggio</h2>
+        <p class="subtitle" style="margin-top:0.3rem">Clicca le sezioni della bussola per compilarle guidato</p>
+      </div>
+
+      <!-- Guide hint -->
+      <div class="compass-guide">
+        ✦ Inizia da <strong style="color:var(--gold)">Identità</strong> in cima — il sistema calcolerà automaticamente statistiche, PF, CA e molto altro
+      </div>
+
+      <!-- Step indicator -->
+      <div class="step-indicator">
+        <div class="step-dot" id="step-1" title="Identità"></div>
+        <div class="step-dot" id="step-2" title="Caratteristiche"></div>
+        <div class="step-dot" id="step-3" title="Abilità"></div>
+        <div class="step-dot" id="step-4" title="Combattimento"></div>
+        <div class="step-dot" id="step-5" title="Equipaggiamento"></div>
+        <div class="step-dot" id="step-6" title="Magie"></div>
+        <div class="step-dot" id="step-7" title="Storia"></div>
+        <div class="step-dot" id="step-8" title="Aspetto"></div>
+      </div>
+
+      <!-- COMPASS -->
+      <div class="compass-container" id="compass-container">
+
+        <!-- Decorative rings (pure CSS, animated) -->
+        <div class="compass-ring compass-ring-outer"></div>
+        <div class="compass-ring compass-ring-inner"></div>
+
+        <!-- Section nodes injected by JS -->
+
+        <!-- Center info -->
+        <div class="compass-center">
+          <div class="compass-center-icon" id="center-icon">⚔</div>
+          <div class="compass-center-name" id="center-name">Il tuo eroe</div>
+          <div class="compass-center-info" id="center-info">Clicca una sezione</div>
+          <div class="compass-center-step" id="center-step">0 / 8 sezioni</div>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="compass-actions">
+        <button class="btn btn-primary" id="save-btn">
+          ✦ Salva
+        </button>
+        <button class="btn btn-secondary" id="view-btn">
+          Visualizza Scheda
+        </button>
+        <a href="characters.html" class="btn btn-secondary">
+          ← Torna ai Personaggi
+        </a>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Mobile bottom bar -->
+  <div class="mobile-bottom-bar">
+    <button class="btn btn-primary btn-sm" id="save-btn-mobile" onclick="document.getElementById('save-btn').click()">✦ Salva</button>
+    <button class="btn btn-secondary btn-sm" onclick="document.getElementById('view-btn').click()">Visualizza</button>
+    <a href="characters.html" class="btn btn-secondary btn-sm">← Indietro</a>
+  </div>
+
+  <!-- SECTION OVERLAY + PANEL -->
+  <div class="section-overlay" id="section-overlay"></div>
+
+  <div class="section-panel" id="section-panel">
+    <div class="section-panel-header">
+      <span class="section-panel-icon" id="panel-icon">⚜</span>
+      <span class="section-panel-title" id="panel-title">Sezione</span>
+      <button class="section-panel-close" id="panel-close">✕</button>
+    </div>
+    <div class="section-panel-body" id="panel-body">
+      <!-- Rendered by JS -->
+    </div>
+    <div class="section-panel-footer">
+      <button class="btn btn-secondary btn-sm" id="panel-close-footer" onclick="document.getElementById('panel-close').click()">Chiudi</button>
+    </div>
+  </div>
+
+  <script src="js/data.js?v=9"></script>
+  <script src="js/storage.js?v=9"></script>
+  <script src="js/calc.js?v=9"></script>
+  <script src="js/app.js?v=9"></script>
+</body>
+</html>

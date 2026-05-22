@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="theme-color" content="#080810">
+  <link rel="icon" type="image/png" href="assets/app-icon.png">
+  <link rel="apple-touch-icon" href="assets/app-icon.png">
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="D&amp;D Sheets">
+  <meta name="application-name" content="D&amp;D Sheets">
+  <title>D&D Sheets — Creatore di Schede</title>
+  <link rel="stylesheet" href="css/style.css?v=9">
+</head>
+<body data-page="index">
+  <canvas id="particles-canvas"></canvas>
+  <div id="toast-container" class="toast-container"></div>
+
+  <div class="page-wrap">
+    <div class="landing">
+
+      <!-- Logo / Icon -->
+      <div class="landing-logo">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="50" cy="50" r="48" fill="none" stroke="rgba(201,168,76,0.3)" stroke-width="1"/>
+          <circle cx="50" cy="50" r="36" fill="none" stroke="rgba(201,168,76,0.5)" stroke-width="1.5"/>
+          <!-- Compass rose -->
+          <polygon points="50,5 55,45 50,50 45,45" fill="rgba(201,168,76,0.9)"/>
+          <polygon points="50,95 55,55 50,50 45,55" fill="rgba(201,168,76,0.4)"/>
+          <polygon points="5,50 45,45 50,50 45,55" fill="rgba(201,168,76,0.4)"/>
+          <polygon points="95,50 55,45 50,50 55,55" fill="rgba(201,168,76,0.9)"/>
+          <circle cx="50" cy="50" r="4" fill="rgba(201,168,76,0.9)"/>
+          <!-- N marker -->
+          <text x="50" y="20" text-anchor="middle" fill="rgba(201,168,76,0.8)" font-size="8" font-family="serif">N</text>
+        </svg>
+      </div>
+
+      <h1 class="landing-title title-glow">D&amp;D Sheets</h1>
+      <p class="subtitle">Il Creatore di Schede Personaggio</p>
+
+      <div class="landing-divider"></div>
+
+      <!-- LOGIN CARD -->
+      <div id="login-card" class="login-card card rune-border animate-in">
+        <h2>Chi sei, avventuriero?</h2>
+        <p style="font-size:0.9rem;color:var(--text-dim);margin-bottom:1.5rem;font-style:italic">
+          Inserisci il tuo nome per accedere alle tue schede. Nessuna password richiesta — la tua essenza è già nota al sistema.
+        </p>
+
+        <form id="login-form">
+          <div class="form-group">
+            <label>Nome Giocatore</label>
+            <input type="text" id="username-input" placeholder="Es. gandalf_il_grigio..." maxlength="30" autocomplete="off" autofocus>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%">Entra nel Reame ✦</button>
+        </form>
+
+        <div id="users-list" style="margin-top:1.5rem">
+          <div class="deco-divider" style="font-size:0.75rem;color:var(--text-dim)">o scegli un profilo salvato</div>
+        </div>
+      </div>
+
+      <!-- WELCOME CARD -->
+      <div id="welcome-card" class="login-card card rune-border animate-in" style="display:none">
+        <div style="text-align:center;margin-bottom:1.5rem">
+          <div style="font-size:2.5rem;margin-bottom:0.5rem;animation:floatY 3s ease-in-out infinite">⚔</div>
+          <h2>Ben tornato, <span id="welcome-name" class="shimmer"></span></h2>
+          <div style="margin-top:0.5rem">
+            <span id="welcome-type-badge" class="type-badge">⚔️ Player</span>
+          </div>
+          <p style="font-size:0.85rem;color:var(--text-dim);margin-top:0.6rem">
+            Hai <strong id="char-count" style="color:var(--gold)">0</strong> personaggi salvati
+          </p>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:0.8rem">
+          <a href="characters.html" class="btn btn-primary btn-lg">
+            <span>⚔</span> I Miei Personaggi
+          </a>
+          <a href="create.html" class="btn btn-secondary">
+            <span>✦</span> Crea Nuovo Personaggio
+          </a>
+          <a href="profile.html" class="btn btn-secondary">
+            <span>⚙</span> Gestione Giocatore
+          </a>
+        </div>
+
+        <div class="profile-actions">
+          <button class="btn-logout">⇄ Cambia Giocatore</button>
+        </div>
+      </div>
+
+      <!-- Bottom tagline -->
+      <div style="position:absolute;bottom:1.5rem;left:0;right:0;text-align:center">
+        <p style="font-size:0.7rem;color:var(--text-dim);letter-spacing:0.2em;text-transform:uppercase">
+          Basato sul regolamento D&D 5a Edizione · SRD
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="js/data.js?v=9"></script>
+  <script src="js/storage.js?v=9"></script>
+  <script src="js/calc.js?v=9"></script>
+  <script src="js/app.js?v=9"></script>
+</body>
+</html>

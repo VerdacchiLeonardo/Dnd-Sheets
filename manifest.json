@@ -1,0 +1,26 @@
+{
+  "name": "D&D Sheets — Creatore di Schede",
+  "short_name": "D&D Sheets",
+  "description": "Crea schede personaggio di Dungeons & Dragons 5e in modo guidato.",
+  "lang": "it",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#080810",
+  "theme_color": "#080810",
+  "icons": [
+    {
+      "src": "assets/app-icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/app-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
