@@ -280,73 +280,71 @@ function initCreatePage() {
     { key: 'appearance', icon: '🖼',  label: 'Aspetto',         step: 8 }
   ];
 
-  buildCompass(SECTIONS);
-  updateCompassCenter();
-
+  // Declare currentSection BEFORE buildCompass — it's used inside updateSectionStates
   let currentSection = null;
-  let completedSections = new Set(loadCompletedSections());
 
   function loadCompletedSections() {
     if (character.identity.name) return ['identity'];
     return [];
   }
 
-  // Build the compass
+  // Build the compass using % positions — no dependency on offsetWidth
   function buildCompass(sections) {
     const container = document.getElementById('compass-container');
     if (!container) return;
 
-    const size = container.offsetWidth;
-    const cx = size / 2;
-    const cy = size / 2;
-    const r = size * 0.38;
-    const nodeSize = size * 0.14;
+    // Remove any previously injected nodes (safe re-build)
+    container.querySelectorAll('.compass-section, .compass-line').forEach(el => el.remove());
 
-    // Draw connector lines
+    const N = sections.length;
+    const R = 37;        // radius as % of container width
+    const nodeW = 14;    // node size as %
+
     sections.forEach((sec, i) => {
-      const angle = (i * (360 / sections.length) - 90) * Math.PI / 180;
-      const x = cx + r * Math.cos(angle);
-      const y = cy + r * Math.sin(angle);
-      const lineLen = r - nodeSize / 2 - size * 0.14;
-      const lineAngle = Math.atan2(y - cy, x - cx) * 180 / Math.PI;
+      const angle = (i * (360 / N) - 90) * Math.PI / 180;
+      const x = 50 + R * Math.cos(angle);   // % from left
+      const y = 50 + R * Math.sin(angle);   // % from top
 
+      // Connector line (decorative, purely CSS calc)
       const line = document.createElement('div');
       line.className = 'compass-line';
       line.style.cssText = `
-        width: ${lineLen}px;
-        transform: translate(${cx}px, ${cy}px) rotate(${lineAngle}deg);
-        top: 0; left: 0;
+        width: ${R - nodeW}%;
+        left: 50%;
+        top: 50%;
+        transform-origin: 0 50%;
+        transform: rotate(${Math.atan2(y - 50, x - 50) * 180 / Math.PI}deg);
       `;
       container.appendChild(line);
-    });
 
-    // Create section nodes
-    sections.forEach((sec, i) => {
-      const angle = (i * (360 / sections.length) - 90) * Math.PI / 180;
-      const x = cx + r * Math.cos(angle);
-      const y = cy + r * Math.sin(angle);
-
+      // Section node
       const node = document.createElement('div');
       node.className = 'compass-section';
       node.id = `section-${sec.key}`;
       node.dataset.key = sec.key;
       node.style.cssText = `
-        left: ${x - nodeSize / 2}px;
-        top: ${y - nodeSize / 2}px;
-        width: ${nodeSize}px;
-        height: ${nodeSize}px;
+        left: calc(${x}% - ${nodeW / 2}%);
+        top: calc(${y}% - ${nodeW / 2}%);
+        width: ${nodeW}%;
+        height: ${nodeW}%;
       `;
       node.innerHTML = `
         <span class="compass-section-icon">${sec.icon}</span>
         <span class="compass-section-label">${sec.label}</span>
       `;
 
-      node.addEventListener('click', () => openSection(sec.key));
+      node.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openSection(sec.key);
+      });
       container.appendChild(node);
     });
 
     updateSectionStates();
   }
+
+  buildCompass(SECTIONS);
+  updateCompassCenter();
 
   function updateSectionStates() {
     SECTIONS.forEach(sec => {
@@ -389,20 +387,35 @@ function initCreatePage() {
 
   // ---- OPEN SECTION PANEL ----
   function openSection(key) {
-    currentSection = key;
-    const overlay = document.getElementById('section-overlay');
-    const panel = document.getElementById('section-panel');
-    const sec = SECTIONS.find(s => s.key === key);
+    try {
+      currentSection = key;
+      const overlay = document.getElementById('section-overlay');
+      const panel   = document.getElementById('section-panel');
+      const sec     = SECTIONS.find(s => s.key === key);
 
-    document.getElementById('panel-icon').textContent = sec.icon;
-    document.getElementById('panel-title').textContent = sec.label;
-    document.getElementById('panel-body').innerHTML = '';
+      if (!overlay || !panel || !sec) {
+        showToast('Errore: elementi UI non trovati', 'error');
+        return;
+      }
 
-    overlay.classList.add('open');
-    panel.classList.add('open');
+      const iconEl  = document.getElementById('panel-icon');
+      const titleEl = document.getElementById('panel-title');
+      const bodyEl  = document.getElementById('panel-body');
 
-    updateSectionStates();
-    renderSectionContent(key, document.getElementById('panel-body'));
+      if (iconEl)  iconEl.textContent  = sec.icon;
+      if (titleEl) titleEl.textContent = sec.label;
+      if (bodyEl)  bodyEl.innerHTML    = '';
+
+      overlay.classList.add('open');
+      panel.classList.add('open');
+
+      updateSectionStates();
+
+      if (bodyEl) renderSectionContent(key, bodyEl);
+    } catch (err) {
+      showToast('Errore apertura sezione', 'error');
+      console.error('[openSection]', err);
+    }
   }
 
   function closeSection() {
