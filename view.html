@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="theme-color" content="#080810">
+  <title>Scheda Personaggio — D&D Sheets</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .view-two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+    .view-three-col {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+    @media (max-width: 768px) {
+      .view-two-col { grid-template-columns: 1fr; }
+      .view-three-col { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 480px) {
+      .view-three-col { grid-template-columns: 1fr; }
+    }
+    .story-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    @media (max-width: 600px) {
+      .story-grid { grid-template-columns: 1fr; }
+    }
+    .story-item label {
+      font-family: var(--font-h);
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      color: var(--text2);
+      text-transform: uppercase;
+      display: block;
+      margin-bottom: 0.3rem;
+    }
+    .story-item p {
+      font-size: 0.9rem;
+      line-height: 1.6;
+      color: var(--text);
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body data-page="view">
+  <canvas id="particles-canvas"></canvas>
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <a href="characters.html" class="navbar-brand">← D&amp;D Sheets</a>
+    <div class="navbar-user">
+      <span class="navbar-username" id="nav-username"></span>
+      <button class="btn-logout">Esci</button>
+    </div>
+  </nav>
+
+  <div class="page-wrap">
+
+    <!-- Hero Header -->
+    <div class="view-header">
+      <div class="view-header-bg" id="view-header-bg"></div>
+      <div class="view-header-overlay"></div>
+      <div class="view-header-content">
+        <div id="view-portrait-wrap"></div>
+        <div style="flex:1">
+          <h1 class="view-name" id="view-name" style="font-size:clamp(1.8rem,6vw,3rem)"></h1>
+          <div class="view-class" id="view-class" style="font-size:1.1rem;margin:0.3rem 0"></div>
+          <div class="view-tags">
+            <span class="meta-tag" id="view-alignment"></span>
+            <span class="meta-tag" id="view-background"></span>
+            <span class="meta-tag" id="view-subrace"></span>
+          </div>
+          <div style="display:flex;gap:0.8rem;margin-top:1rem;flex-wrap:wrap">
+            <button class="btn btn-primary btn-sm" id="edit-btn">✎ Modifica</button>
+            <button class="btn btn-secondary btn-sm" id="print-btn">🖨 Stampa</button>
+            <a href="characters.html" class="btn btn-secondary btn-sm">← Tutti i Personaggi</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sheet Body -->
+    <div class="view-body" style="padding-top:2rem">
+
+      <!-- Combat Overview -->
+      <div class="view-section animate-in">
+        <div class="view-section-title">⚔ Statistiche di Combattimento</div>
+        <div class="combat-stats-grid">
+          <div class="stat-box">
+            <div class="stat-box-value" id="view-ac">—</div>
+            <span class="stat-box-label">Classe Armatura</span>
+          </div>
+          <div class="stat-box">
+            <div class="stat-box-value" id="view-hp">—</div>
+            <span class="stat-box-label">Punti Ferita</span>
+          </div>
+          <div class="stat-box">
+            <div class="stat-box-value" id="view-initiative">—</div>
+            <span class="stat-box-label">Iniziativa</span>
+          </div>
+          <div class="stat-box">
+            <div class="stat-box-value" id="view-speed">—</div>
+            <span class="stat-box-label">Velocità</span>
+          </div>
+          <div class="stat-box">
+            <div class="stat-box-value" id="view-pb">—</div>
+            <span class="stat-box-label">Bonus Competenza</span>
+          </div>
+          <div class="stat-box">
+            <div class="stat-box-value" id="view-passive">—</div>
+            <span class="stat-box-label">Percezione Passiva</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ability Scores + Saves + Skills -->
+      <div class="view-three-col animate-in">
+
+        <!-- Characteristics -->
+        <div class="view-section">
+          <div class="view-section-title">💪 Caratteristiche</div>
+          <div class="ability-grid" id="view-abilities" style="grid-template-columns:repeat(2,1fr)"></div>
+        </div>
+
+        <!-- Saving Throws -->
+        <div class="view-section">
+          <div class="view-section-title">🛡 Tiri Salvezza</div>
+          <div class="saves-grid" id="view-saves" style="grid-template-columns:1fr"></div>
+        </div>
+
+        <!-- Skills -->
+        <div class="view-section">
+          <div class="view-section-title">🎯 Abilità</div>
+          <div class="skills-list" id="view-skills"></div>
+        </div>
+      </div>
+
+      <!-- Attacks + Equipment -->
+      <div class="view-two-col animate-in">
+
+        <!-- Attacks -->
+        <div class="view-section">
+          <div class="view-section-title">⚔ Attacchi</div>
+          <table class="attacks-table">
+            <thead>
+              <tr><th>Arma</th><th>Bonus</th><th>Danno</th><th>Tipo</th></tr>
+            </thead>
+            <tbody id="view-attacks-body"></tbody>
+          </table>
+        </div>
+
+        <!-- Equipment -->
+        <div class="view-section">
+          <div class="view-section-title">🎒 Equipaggiamento</div>
+          <div class="currency-grid" style="margin-bottom:1rem">
+            <div class="currency-item"><span class="currency-symbol">Rame</span><div id="view-cp" style="font-family:var(--font-h);text-align:center;color:var(--text)">0</div></div>
+            <div class="currency-item"><span class="currency-symbol">Argento</span><div id="view-sp" style="font-family:var(--font-h);text-align:center;color:var(--text)">0</div></div>
+            <div class="currency-item"><span class="currency-symbol">Elettrum</span><div id="view-ep" style="font-family:var(--font-h);text-align:center;color:var(--text)">0</div></div>
+            <div class="currency-item"><span class="currency-symbol" style="color:var(--gold)">Oro</span><div id="view-gp" style="font-family:var(--font-h);text-align:center;color:var(--gold)">0</div></div>
+            <div class="currency-item"><span class="currency-symbol" style="color:#e0e0e0">Platino</span><div id="view-pp" style="font-family:var(--font-h);text-align:center;color:#e0e0e0">0</div></div>
+          </div>
+          <table class="attacks-table">
+            <thead><tr><th>Oggetto</th><th>Qtà</th></tr></thead>
+            <tbody id="view-equipment-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Spells (shown only for spellcasters) -->
+      <div class="view-section animate-in" id="view-spells-section">
+        <div class="view-section-title">✨ Magie</div>
+        <div class="spell-dc-bar" style="margin-bottom:1rem">
+          <div class="spell-stat">
+            <div class="spell-stat-value" id="view-spell-dc">—</div>
+            <span class="stat-box-label">CD Incantesimi</span>
+          </div>
+          <div class="spell-stat">
+            <div class="spell-stat-value" id="view-spell-atk">—</div>
+            <span class="stat-box-label">Bonus Attacco Magia</span>
+          </div>
+        </div>
+        <div id="view-spells-list"></div>
+      </div>
+
+      <!-- Story -->
+      <div class="view-section animate-in">
+        <div class="view-section-title">📖 Personalità & Storia</div>
+        <div class="story-grid">
+          <div class="story-item">
+            <label>Tratti di Personalità</label>
+            <p id="view-traits"></p>
+          </div>
+          <div class="story-item">
+            <label>Ideali</label>
+            <p id="view-ideals"></p>
+          </div>
+          <div class="story-item">
+            <label>Legami</label>
+            <p id="view-bonds"></p>
+          </div>
+          <div class="story-item">
+            <label>Difetti</label>
+            <p id="view-flaws"></p>
+          </div>
+        </div>
+        <div style="margin-top:1rem">
+          <label style="font-family:var(--font-h);font-size:0.7rem;letter-spacing:0.15em;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:0.4rem">Retroscena</label>
+          <p id="view-backstory" style="font-size:0.9rem;line-height:1.7;color:var(--text);white-space:pre-wrap"></p>
+        </div>
+      </div>
+
+      <!-- Languages + Custom -->
+      <div class="view-two-col animate-in">
+        <div class="view-section">
+          <div class="view-section-title">🗣 Lingue</div>
+          <p id="view-languages" style="font-size:0.9rem;color:var(--text2)"></p>
+        </div>
+        <div class="view-section">
+          <div class="view-section-title">⚗ Caratteristiche Personalizzate</div>
+          <div id="view-custom"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/calc.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
