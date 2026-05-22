@@ -4,14 +4,22 @@
 
 // ---- Shared Utilities ----
 
+let _toastTimer = null;
 function showToast(msg, type = 'success') {
   const container = document.getElementById('toast-container');
   if (!container) return;
-  const t = document.createElement('div');
-  t.className = `toast ${type}`;
-  t.textContent = msg;
-  container.appendChild(t);
-  setTimeout(() => t.remove(), 3200);
+  // Riusa un singolo toast invece di accumularne tanti
+  let t = container.querySelector('.toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.className = 'toast';
+    container.appendChild(t);
+  }
+  const icon = type === 'success' ? '✦' : type === 'error' ? '⚠' : 'ℹ';
+  t.className = `toast ${type} show`;
+  t.innerHTML = `<span class="toast-icon">${icon}</span><span>${msg}</span>`;
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
 }
 
 function getParam(key) {
@@ -984,20 +992,26 @@ function initCreatePage() {
         }).join('')}
       </div>
 
-      <div class="deco-divider">Attacchi</div>
-      <table class="attacks-table" id="attacks-table">
-        <thead>
-          <tr><th>Arma</th><th>Bonus Attacco</th><th>Danno</th><th>Tipo</th><th></th></tr>
-        </thead>
-        <tbody id="attacks-body"></tbody>
-      </table>
+      <div class="deco-divider">Attacchi & Armi</div>
+      <div class="section-hint">Tocca <strong>📖 Regole</strong> su un'arma per vedere come usarla in battaglia secondo il regolamento D&D.</div>
+      <div id="attacks-list"></div>
       <div style="margin-top:0.8rem;display:flex;gap:0.5rem;flex-wrap:wrap">
         <select id="weapon-pick" style="flex:1;min-width:140px">
-          <option value="">— Aggiungi arma —</option>
-          ${[...DND.WEAPONS.simple_melee, ...DND.WEAPONS.simple_ranged, ...DND.WEAPONS.martial_melee, ...DND.WEAPONS.martial_ranged]
-            .map(w => `<option value="${w.name}">${w.name} (${w.damage} ${w.type})</option>`).join('')}
+          <option value="">— Scegli un'arma —</option>
+          <optgroup label="Armi Semplici da Mischia">
+            ${DND.WEAPONS.simple_melee.map(w => `<option value="${w.name}">${w.name} (${w.damage} ${w.type})</option>`).join('')}
+          </optgroup>
+          <optgroup label="Armi Semplici a Distanza">
+            ${DND.WEAPONS.simple_ranged.map(w => `<option value="${w.name}">${w.name} (${w.damage} ${w.type})</option>`).join('')}
+          </optgroup>
+          <optgroup label="Armi da Guerra da Mischia">
+            ${DND.WEAPONS.martial_melee.map(w => `<option value="${w.name}">${w.name} (${w.damage} ${w.type})</option>`).join('')}
+          </optgroup>
+          <optgroup label="Armi da Guerra a Distanza">
+            ${DND.WEAPONS.martial_ranged.map(w => `<option value="${w.name}">${w.name} (${w.damage} ${w.type})</option>`).join('')}
+          </optgroup>
         </select>
-        <button class="btn btn-secondary btn-sm" id="add-weapon-btn">Aggiungi</button>
+        <button class="btn btn-secondary btn-sm" id="add-weapon-btn">+ Arma</button>
         <button class="btn btn-secondary btn-sm" id="add-custom-attack-btn">+ Personalizzato</button>
       </div>
     `;
@@ -1057,58 +1071,142 @@ function initCreatePage() {
       const sel = document.getElementById('weapon-pick');
       const name = sel.value;
       if (!name) return;
-      const all = [...DND.WEAPONS.simple_melee, ...DND.WEAPONS.simple_ranged, ...DND.WEAPONS.martial_melee, ...DND.WEAPONS.martial_ranged];
-      const wpn = all.find(w => w.name === name);
+      const wpn = Calc.findWeapon(name);
       if (!wpn) return;
-      const isMelee = [...DND.WEAPONS.simple_melee, ...DND.WEAPONS.martial_melee].includes(wpn);
-      const abilityMod = isMelee ? Calc.modifier(character.abilities.str) : Calc.modifier(character.abilities.dex);
+      const isMelee = !wpn._ranged;
+      const props = wpn.properties || [];
+      // Arma di precisione: usa la migliore tra FOR e DES
+      let abilityMod;
+      if (props.some(p => p.startsWith('Preciso'))) {
+        abilityMod = Math.max(Calc.modifier(character.abilities.str), Calc.modifier(character.abilities.dex));
+      } else {
+        abilityMod = isMelee ? Calc.modifier(character.abilities.str) : Calc.modifier(character.abilities.dex);
+      }
       const attackBonus = abilityMod + Calc.proficiencyBonus(character.identity.level);
       character.combat.attacks.push({
         name: wpn.name,
         attack_bonus: (attackBonus >= 0 ? '+' : '') + attackBonus,
         damage: wpn.damage + (abilityMod >= 0 ? '+' : '') + abilityMod,
-        damage_type: wpn.type
+        damage_type: wpn.type,
+        weapon_ref: wpn.name,
+        custom_notes: ''
       });
       renderAttacks();
       autoSave();
+      showToast(`${wpn.name} aggiunta`);
     });
 
     document.getElementById('add-custom-attack-btn')?.addEventListener('click', () => {
-      character.combat.attacks.push({ name: 'Attacco Personalizzato', attack_bonus: '+0', damage: '1d6', damage_type: 'Custom' });
+      character.combat.attacks.push({
+        name: 'Attacco Personalizzato', attack_bonus: '+0', damage: '1d6',
+        damage_type: 'Custom', weapon_ref: null, custom_notes: ''
+      });
       renderAttacks();
       autoSave();
     });
   }
 
   function renderAttacks() {
-    const tbody = document.getElementById('attacks-body');
-    if (!tbody) return;
-    tbody.innerHTML = '';
+    const list = document.getElementById('attacks-list');
+    if (!list) return;
+    list.innerHTML = '';
+
+    if (!character.combat.attacks.length) {
+      list.innerHTML = '<div class="section-hint">Nessun attacco. Aggiungi un\'arma qui sotto — il sistema calcola bonus e danni automaticamente.</div>';
+      return;
+    }
+
     character.combat.attacks.forEach((atk, i) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td><input type="text" value="${atk.name}" style="background:transparent;border:none;outline:none;color:var(--text);width:100%" class="atk-name" data-i="${i}"></td>
-        <td><input type="text" value="${atk.attack_bonus}" style="background:transparent;border:none;outline:none;color:var(--gold);width:60px;text-align:center" class="atk-bonus" data-i="${i}"></td>
-        <td><input type="text" value="${atk.damage}" style="background:transparent;border:none;outline:none;color:var(--red2);width:70px" class="atk-dmg" data-i="${i}"></td>
-        <td style="color:var(--text-dim);font-size:0.8rem">${atk.damage_type}</td>
-        <td><button class="eq-item-delete atk-del" data-i="${i}">✕</button></td>
+      const weapon = atk.weapon_ref ? Calc.findWeapon(atk.weapon_ref) : null;
+      const card = document.createElement('div');
+      card.className = 'attack-card';
+      card.innerHTML = `
+        <div class="attack-card-head">
+          <input type="text" value="${atk.name}" class="attack-name atk-name" data-i="${i}" placeholder="Nome arma">
+          <button class="attack-toggle" data-i="${i}" title="Mostra le regole">📖 Regole</button>
+          <button class="eq-item-delete atk-del" data-i="${i}">✕</button>
+        </div>
+        <div class="attack-card-stats">
+          <div class="attack-stat">
+            <span class="attack-stat-label">Colpire</span>
+            <input type="text" value="${atk.attack_bonus}" class="atk-bonus" data-i="${i}">
+          </div>
+          <div class="attack-stat">
+            <span class="attack-stat-label">Danno</span>
+            <input type="text" value="${atk.damage}" class="atk-dmg" data-i="${i}">
+          </div>
+          <div class="attack-stat">
+            <span class="attack-stat-label">Tipo</span>
+            <input type="text" value="${atk.damage_type || ''}" class="atk-type" data-i="${i}">
+          </div>
+        </div>
+        <div class="attack-rules" id="atk-rules-${i}" style="display:none"></div>
       `;
-      tr.querySelectorAll('input').forEach(inp => {
+
+      card.querySelectorAll('input').forEach(inp => {
         inp.addEventListener('change', () => {
           const idx = parseInt(inp.dataset.i);
           if (inp.classList.contains('atk-name')) character.combat.attacks[idx].name = inp.value;
           if (inp.classList.contains('atk-bonus')) character.combat.attacks[idx].attack_bonus = inp.value;
           if (inp.classList.contains('atk-dmg')) character.combat.attacks[idx].damage = inp.value;
+          if (inp.classList.contains('atk-type')) character.combat.attacks[idx].damage_type = inp.value;
           autoSave();
         });
       });
-      tr.querySelector('.atk-del')?.addEventListener('click', e => {
-        character.combat.attacks.splice(parseInt(e.target.dataset.i), 1);
+
+      card.querySelector('.atk-del')?.addEventListener('click', () => {
+        character.combat.attacks.splice(i, 1);
         renderAttacks();
         autoSave();
       });
-      tbody.appendChild(tr);
+
+      card.querySelector('.attack-toggle')?.addEventListener('click', () => {
+        const rulesEl = document.getElementById(`atk-rules-${i}`);
+        if (rulesEl.style.display === 'none') {
+          rulesEl.innerHTML = buildWeaponRulesHTML(atk, weapon, i);
+          rulesEl.style.display = 'block';
+          // bind custom notes textarea
+          const ta = rulesEl.querySelector('.atk-custom-notes');
+          if (ta) ta.addEventListener('input', () => {
+            character.combat.attacks[i].custom_notes = ta.value;
+            autoSave();
+          });
+        } else {
+          rulesEl.style.display = 'none';
+        }
+      });
+
+      list.appendChild(card);
     });
+  }
+
+  function buildWeaponRulesHTML(atk, weapon, i) {
+    if (weapon) {
+      const rules = Calc.explainWeapon(weapon, character);
+      return `
+        <div class="rules-title">⚔ Come funziona in battaglia</div>
+        <ul class="rules-list">
+          ${rules.map(r => `<li>${r}</li>`).join('')}
+        </ul>
+        <div class="rules-meta">
+          Dado base dell'arma: <strong>${weapon.damage}</strong> ·
+          Proprietà: <strong>${(weapon.properties || []).join(', ') || 'Nessuna'}</strong>
+        </div>
+        <label style="margin-top:0.6rem">Note personali su quest'arma</label>
+        <textarea class="atk-custom-notes" rows="2" placeholder="Es. arma magica +1, effetti speciali...">${atk.custom_notes || ''}</textarea>
+      `;
+    }
+    // Arma personalizzata
+    return `
+      <div class="rules-title">⚔ Attacco personalizzato</div>
+      <ul class="rules-list">
+        <li>TIRO PER COLPIRE: 1d20 + il bonus indicato sopra, contro la CA del bersaglio.</li>
+        <li>DANNO se colpisci: tira i dadi indicati nel campo "Danno". Con un 20 naturale (critico) tiri i dadi del danno due volte.</li>
+        <li>Definisci tu come funziona quest'arma/potere nel campo note qui sotto.</li>
+      </ul>
+      <label style="margin-top:0.6rem">Descrizione / Regole personalizzate</label>
+      <textarea class="atk-custom-notes" rows="3" placeholder="Descrivi come funziona quest'arma o potere: dadi, effetti, tiri salvezza richiesti...">${atk.custom_notes || ''}</textarea>
+    `;
   }
 
   // ---- EQUIPMENT ----
@@ -1254,12 +1352,95 @@ function initCreatePage() {
   }
 
   // ---- SPELLS ----
+
+  // Trova un incantesimo per nome e ne restituisce dati + livello
+  function findSpellData(name) {
+    for (const [key, list] of Object.entries(DND.SPELLS)) {
+      const spell = list.find(s => s.name === name);
+      if (spell) {
+        const level = key === 'cantrips' ? 0 : parseInt(key.replace('level', ''));
+        return { ...spell, _level: level };
+      }
+    }
+    return null;
+  }
+
+  function spellLevelLabel(lvl) {
+    return lvl === 0 ? 'Trucchetto' : `${lvl}° livello`;
+  }
+
+  // Popup di dettaglio incantesimo
+  function showSpellDetail(spellName) {
+    const spell = findSpellData(spellName);
+    if (!spell) { showToast('Dettagli non disponibili', 'error'); return; }
+
+    let modal = document.getElementById('spell-modal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'spell-modal';
+      modal.className = 'spell-modal-overlay';
+      document.body.appendChild(modal);
+    }
+
+    const isCantrip = spell._level === 0;
+    const known = character.spells.known.includes(spellName);
+
+    modal.innerHTML = `
+      <div class="spell-modal-card">
+        <button class="spell-modal-close" id="spell-modal-close">✕</button>
+        <div class="spell-modal-level ${isCantrip ? 'cantrip' : ''}">
+          ${isCantrip ? '✦ Trucchetto' : '◆ Incantesimo di ' + spell._level + '° livello'}
+        </div>
+        <h3 class="spell-modal-name">${spell.name}</h3>
+        <div class="spell-modal-tags">
+          <span class="spell-modal-tag">${spell.school}</span>
+          ${spell.ritual ? '<span class="spell-modal-tag ritual">Rituale</span>' : ''}
+        </div>
+        <div class="spell-modal-grid">
+          <div><span class="smg-label">Tempo di lancio</span><span class="smg-val">${spell.castTime || '1 azione'}</span></div>
+          <div><span class="smg-label">Gittata</span><span class="smg-val">${spell.range || '—'}</span></div>
+          <div><span class="smg-label">Durata</span><span class="smg-val">${spell.duration || 'Istantanea'}</span></div>
+          <div><span class="smg-label">Componenti</span><span class="smg-val">${spell.components || 'V, S'}</span></div>
+        </div>
+        <div class="spell-modal-section-title">Come funziona</div>
+        <p class="spell-modal-desc">${spell.description}</p>
+        <div class="spell-modal-school-note">${DND.SPELL_SCHOOL_INFO[spell.school] || ''}</div>
+        <div class="spell-modal-classes">Classi: ${spell.classes.join(', ')}</div>
+        <button class="btn ${known ? 'btn-secondary' : 'btn-primary'}" id="spell-modal-add" style="width:100%;margin-top:1rem">
+          ${known ? '✓ Già nella tua lista — Rimuovi' : '+ Aggiungi ai tuoi incantesimi'}
+        </button>
+      </div>
+    `;
+
+    modal.classList.add('open');
+
+    const close = () => modal.classList.remove('open');
+    modal.querySelector('#spell-modal-close').addEventListener('click', close);
+    modal.addEventListener('click', e => { if (e.target === modal) close(); });
+
+    modal.querySelector('#spell-modal-add').addEventListener('click', () => {
+      if (known) {
+        character.spells.known = character.spells.known.filter(s => s !== spellName);
+        character.spells.prepared = character.spells.prepared.filter(s => s !== spellName);
+        showToast('Incantesimo rimosso');
+      } else {
+        character.spells.known.push(spellName);
+        character.spells.prepared.push(spellName);
+        showToast('Incantesimo aggiunto ✦');
+      }
+      close();
+      renderPreparedSpells();
+      autoSave();
+    });
+  }
+
   function renderSpells(c) {
     if (!Calc.isSpellcaster(character)) {
       c.innerHTML = `
         <div style="text-align:center;padding:3rem 1rem;color:var(--text-dim)">
           <div style="font-size:3rem;margin-bottom:1rem">🚫</div>
-          <div class="subtitle">La classe ${character.identity.class || 'selezionata'} non usa la magia arcana/divina standard.</div>
+          <div class="subtitle">La classe ${character.identity.class || 'selezionata'} non usa la magia standard.</div>
+          <p style="margin-top:0.8rem;font-size:0.85rem">Puoi comunque aggiungere poteri magici personalizzati nella sezione <strong>Aspetto</strong>.</p>
         </div>
       `;
       return;
@@ -1269,6 +1450,9 @@ function initCreatePage() {
     const spellSlots = Calc.spellSlots(character);
     const dc = Calc.spellSaveDC(character);
     const atk = Calc.spellAttackBonus(character);
+    const cantrips = Calc.cantripsKnown(character);
+    const spellsAvail = Calc.spellsAvailable(character);
+    const maxLvl = Calc.maxSpellLevel(character);
 
     c.innerHTML = `
       <div class="spell-dc-bar">
@@ -1286,8 +1470,21 @@ function initCreatePage() {
         </div>
       </div>
 
+      <div class="spell-budget">
+        <div class="spell-budget-title">✦ Al livello ${character.identity.level} il tuo ${character.identity.class} ha:</div>
+        <div class="spell-budget-row">
+          ${cantrips > 0 ? `<span class="spell-budget-pill"><strong>${cantrips}</strong> trucchetti</span>` : ''}
+          <span class="spell-budget-pill"><strong>${spellsAvail.count}</strong> incantesimi ${spellsAvail.type}</span>
+          <span class="spell-budget-pill">incantesimi fino al <strong>${maxLvl}°</strong> livello</span>
+        </div>
+        <div class="spell-budget-current">
+          Attualmente nella tua lista: <strong>${character.spells.known.length}</strong> incantesimi
+        </div>
+      </div>
+
       ${Array.isArray(spellSlots) ? `
         <div class="deco-divider">Slot Incantesimi</div>
+        <div class="section-hint">Tocca i cerchietti per segnare gli slot usati durante l'avventura.</div>
         <div class="spell-slots-grid">
           ${spellSlots.map((total, i) => total > 0 ? `
             <div class="slot-box">
@@ -1303,17 +1500,23 @@ function initCreatePage() {
           ` : '').join('')}
         </div>
       ` : `
+        <div class="deco-divider">Slot del Patto</div>
         <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:0.8rem;margin-bottom:1rem;text-align:center">
-          <div style="font-family:var(--font-h);color:var(--purple2)">Slot Patto: ${spellSlots.slots} × ${spellSlots.level}° livello</div>
+          <div style="font-family:var(--font-h);color:var(--purple2)">${spellSlots.slots} slot × ${spellSlots.level}° livello</div>
+          <div style="font-size:0.7rem;color:var(--text-dim);margin-top:0.3rem">Il Warlock recupera tutti gli slot con un riposo breve</div>
         </div>
       `}
 
-      <div class="deco-divider">Incantesimi Conosciuti / Preparati</div>
+      <div class="deco-divider">Cerca Incantesimi</div>
       <div style="margin-bottom:1rem">
-        <input type="text" id="spell-search" placeholder="Cerca incantesimi per ${character.identity.class}...">
+        <input type="text" id="spell-search" placeholder="Cerca tra gli incantesimi per ${character.identity.class}...">
         <div class="autocomplete-list" id="spell-autocomplete"></div>
       </div>
+
+      <div class="deco-divider">I Tuoi Incantesimi</div>
+      <div class="section-hint">Tocca un incantesimo per vederne i dettagli completi.</div>
       <div id="prepared-spells"></div>
+
       <div id="spell-suggestions" style="margin-top:1rem"></div>
     `;
 
@@ -1323,7 +1526,6 @@ function initCreatePage() {
     c.querySelectorAll('.slot-pip').forEach(pip => {
       pip.addEventListener('click', () => {
         const level = parseInt(pip.dataset.level);
-        const slot = parseInt(pip.dataset.slot);
         const slotsUsed = character.spells.slots_used[level] || 0;
         if (pip.classList.contains('available')) {
           character.spells.slots_used[level] = slotsUsed + 1;
@@ -1340,7 +1542,9 @@ function initCreatePage() {
     const spellAuto = document.getElementById('spell-autocomplete');
     if (spellSearch) {
       const classSpells = Calc.getClassSpells(character.identity.class);
-      const allSpells = Object.values(classSpells).flat();
+      const allSpells = Object.entries(classSpells).flatMap(([key, list]) =>
+        list.map(s => ({ ...s, _level: key === 'cantrips' ? 0 : parseInt(key.replace('level', '')) }))
+      );
 
       spellSearch.addEventListener('input', () => {
         const q = spellSearch.value.toLowerCase();
@@ -1351,18 +1555,11 @@ function initCreatePage() {
         matches.forEach(spell => {
           const el = document.createElement('div');
           el.className = 'autocomplete-item';
-          el.innerHTML = `${spell.name}<small>${spell.school}${spell.ritual?' · Rituale':''}</small>`;
+          el.innerHTML = `${spell.name}<small>${spellLevelLabel(spell._level)} · ${spell.school}${spell.ritual?' · Rituale':''}</small>`;
           el.addEventListener('click', () => {
-            if (!character.spells.known.includes(spell.name)) {
-              character.spells.known.push(spell.name);
-            }
-            if (!character.spells.prepared.includes(spell.name)) {
-              character.spells.prepared.push(spell.name);
-            }
             spellSearch.value = '';
             spellAuto.classList.remove('open');
-            renderPreparedSpells();
-            autoSave();
+            showSpellDetail(spell.name);
           });
           spellAuto.appendChild(el);
         });
@@ -1374,40 +1571,59 @@ function initCreatePage() {
   function renderPreparedSpells() {
     const container = document.getElementById('prepared-spells');
     if (!container) return;
-    if (!character.spells.prepared.length && !character.spells.known.length) {
-      container.innerHTML = '<div class="section-hint">Cerca e aggiungi incantesimi dall\'alto.</div>';
+    if (!character.spells.known.length) {
+      container.innerHTML = '<div class="section-hint">Nessun incantesimo ancora. Cercali sopra o scegli tra i suggerimenti qui sotto.</div>';
       return;
     }
-    const allSpells = Object.values(DND.SPELLS).flat();
     container.innerHTML = '';
-    character.spells.known.forEach(spellName => {
-      const spell = allSpells.find(s => s.name === spellName);
-      const isPrepared = character.spells.prepared.includes(spellName);
-      const el = document.createElement('div');
-      el.className = `spell-entry${isPrepared ? ' prepared' : ''}`;
-      el.innerHTML = `
-        <div class="spell-prepared-dot" title="Preparato/Conosciuto"></div>
-        <span class="spell-entry-name">${spellName}</span>
-        ${spell ? `<span class="spell-entry-school">${spell.school}</span>` : ''}
-        ${spell?.ritual ? '<span class="spell-ritual-tag">R</span>' : ''}
-        <button class="eq-item-delete" style="margin-left:0.5rem" title="Rimuovi">✕</button>
-      `;
-      el.querySelector('.spell-prepared-dot').addEventListener('click', () => {
-        if (isPrepared) {
-          character.spells.prepared = character.spells.prepared.filter(s => s !== spellName);
-        } else {
-          character.spells.prepared.push(spellName);
-        }
-        el.classList.toggle('prepared');
-        autoSave();
+
+    // Raggruppa per livello
+    const byLevel = {};
+    character.spells.known.forEach(name => {
+      const s = findSpellData(name);
+      const lvl = s ? s._level : -1;
+      (byLevel[lvl] = byLevel[lvl] || []).push({ name, data: s });
+    });
+
+    Object.keys(byLevel).map(Number).sort((a, b) => a - b).forEach(lvl => {
+      const header = document.createElement('div');
+      header.className = 'spell-level-header';
+      header.textContent = lvl === 0 ? 'Trucchetti' : (lvl === -1 ? 'Altri' : `${lvl}° Livello`);
+      container.appendChild(header);
+
+      byLevel[lvl].forEach(({ name, data }) => {
+        const isPrepared = character.spells.prepared.includes(name);
+        const el = document.createElement('div');
+        el.className = `spell-entry${isPrepared ? ' prepared' : ''}`;
+        el.innerHTML = `
+          <div class="spell-prepared-dot" title="${isPrepared ? 'Preparato' : 'Non preparato'} — clicca per cambiare"></div>
+          <span class="spell-entry-name">${name}</span>
+          ${data ? `<span class="spell-entry-school">${data.school}</span>` : ''}
+          ${data?.ritual ? '<span class="spell-ritual-tag">R</span>' : ''}
+          <button class="spell-info-btn" title="Dettagli">ⓘ</button>
+          <button class="eq-item-delete" title="Rimuovi">✕</button>
+        `;
+        el.querySelector('.spell-prepared-dot').addEventListener('click', e => {
+          e.stopPropagation();
+          if (isPrepared) character.spells.prepared = character.spells.prepared.filter(s => s !== name);
+          else character.spells.prepared.push(name);
+          el.classList.toggle('prepared');
+          autoSave();
+        });
+        el.querySelector('.spell-info-btn').addEventListener('click', e => {
+          e.stopPropagation();
+          showSpellDetail(name);
+        });
+        el.querySelector('.spell-entry-name').addEventListener('click', () => showSpellDetail(name));
+        el.querySelector('.eq-item-delete').addEventListener('click', e => {
+          e.stopPropagation();
+          character.spells.known = character.spells.known.filter(s => s !== name);
+          character.spells.prepared = character.spells.prepared.filter(s => s !== name);
+          renderPreparedSpells();
+          autoSave();
+        });
+        container.appendChild(el);
       });
-      el.querySelector('.eq-item-delete').addEventListener('click', () => {
-        character.spells.known = character.spells.known.filter(s => s !== spellName);
-        character.spells.prepared = character.spells.prepared.filter(s => s !== spellName);
-        el.remove();
-        autoSave();
-      });
-      container.appendChild(el);
     });
   }
 
@@ -1415,34 +1631,53 @@ function initCreatePage() {
     const container = document.getElementById('spell-suggestions');
     if (!container) return;
     const classSpells = Calc.getClassSpells(character.identity.class);
-    const allForClass = Object.entries(classSpells).flatMap(([lvl, spells]) =>
-      spells.slice(0, 3).map(s => ({ ...s, levelKey: lvl }))
-    ).slice(0, 12);
+    const maxLvl = Calc.maxSpellLevel(character);
 
-    if (!allForClass.length) return;
-    container.innerHTML = `<div class="deco-divider">Suggerimenti per ${character.identity.class}</div>`;
-    allForClass.forEach(spell => {
-      const el = document.createElement('div');
-      el.className = 'spell-entry';
-      const levelLabel = spell.levelKey === 'cantrips' ? 'Trucchetto' : spell.levelKey.replace('level', '') + '° Lv';
-      el.innerHTML = `
-        <span style="font-size:0.65rem;color:var(--purple2);min-width:55px">${levelLabel}</span>
-        <span class="spell-entry-name">${spell.name}</span>
-        <span class="spell-entry-school">${spell.school}</span>
-        ${spell.ritual ? '<span class="spell-ritual-tag">R</span>' : ''}
-        <button class="btn btn-secondary btn-sm" style="padding:2px 8px;font-size:0.7rem" title="Aggiungi">+</button>
-      `;
-      el.querySelector('.btn').addEventListener('click', () => {
-        if (!character.spells.known.includes(spell.name)) {
-          character.spells.known.push(spell.name);
-          character.spells.prepared.push(spell.name);
-          renderPreparedSpells();
-          autoSave();
-          el.style.opacity = '0.4';
-          el.style.pointerEvents = 'none';
-        }
+    container.innerHTML = `<div class="deco-divider">Suggerimenti per ${character.identity.class}</div>
+      <div class="section-hint">Incantesimi consigliati per il tuo livello. Tocca per i dettagli, "+" per aggiungere.</div>`;
+
+    const order = ['cantrips', 'level1', 'level2', 'level3', 'level4', 'level5', 'level6', 'level7', 'level8', 'level9'];
+    order.forEach(key => {
+      const lvl = key === 'cantrips' ? 0 : parseInt(key.replace('level', ''));
+      if (lvl > maxLvl) return;
+      const spells = (classSpells[key] || []).slice(0, 6);
+      if (!spells.length) return;
+
+      const header = document.createElement('div');
+      header.className = 'spell-level-header';
+      header.textContent = lvl === 0 ? 'Trucchetti' : `${lvl}° Livello`;
+      container.appendChild(header);
+
+      spells.forEach(spell => {
+        const already = character.spells.known.includes(spell.name);
+        const el = document.createElement('div');
+        el.className = 'spell-entry' + (already ? ' dimmed' : '');
+        el.innerHTML = `
+          <span class="spell-entry-name">${spell.name}</span>
+          <span class="spell-entry-school">${spell.school}</span>
+          ${spell.ritual ? '<span class="spell-ritual-tag">R</span>' : ''}
+          <button class="spell-info-btn" title="Dettagli">ⓘ</button>
+          <button class="spell-add-btn" title="${already ? 'Già aggiunto' : 'Aggiungi'}">${already ? '✓' : '+'}</button>
+        `;
+        el.querySelector('.spell-info-btn').addEventListener('click', e => {
+          e.stopPropagation();
+          showSpellDetail(spell.name);
+        });
+        el.querySelector('.spell-entry-name').addEventListener('click', () => showSpellDetail(spell.name));
+        el.querySelector('.spell-add-btn').addEventListener('click', e => {
+          e.stopPropagation();
+          if (!character.spells.known.includes(spell.name)) {
+            character.spells.known.push(spell.name);
+            character.spells.prepared.push(spell.name);
+            renderPreparedSpells();
+            autoSave();
+            showToast('Incantesimo aggiunto ✦');
+            el.classList.add('dimmed');
+            el.querySelector('.spell-add-btn').textContent = '✓';
+          }
+        });
+        container.appendChild(el);
       });
-      container.appendChild(el);
     });
   }
 

@@ -216,5 +216,99 @@ const Calc = {
       }
     }
     return result;
+  },
+
+  // ---- SPELLCASTING HELPERS ----
+
+  // Numero di trucchetti conosciuti al livello del personaggio
+  cantripsKnown(character) {
+    const cls = DND.CLASSES[character.identity.class];
+    if (!cls || !cls.spellcasting || !cls.spellcasting.cantrips) return 0;
+    const lvl = Math.max(1, Math.min(20, character.identity.level || 1));
+    return cls.spellcasting.cantrips[lvl - 1] || 0;
+  },
+
+  // Numero di incantesimi conosciuti o preparabili al livello del personaggio
+  spellsAvailable(character) {
+    const className = character.identity.class;
+    const cls = DND.CLASSES[className];
+    if (!cls || !cls.spellcasting) return { count: 0, type: '-' };
+    const lvl = Math.max(1, Math.min(20, character.identity.level || 1));
+    const ability = cls.spellcasting.ability;
+    const abilityMod = this.modifier(character.abilities[ability]);
+
+    // Classi "known": tabella fissa
+    if (DND.SPELLS_KNOWN[className]) {
+      return { count: DND.SPELLS_KNOWN[className][lvl - 1] || 0, type: 'conosciuti' };
+    }
+
+    // Classi "prepared": modificatore + livello (intero o metà)
+    if (className === 'Paladino' || className === 'Artificiere') {
+      return { count: Math.max(1, abilityMod + Math.floor(lvl / 2)), type: 'preparati' };
+    }
+    // Chierico, Druido, Mago
+    return { count: Math.max(1, abilityMod + lvl), type: 'preparati' };
+  },
+
+  // Livello massimo di incantesimo lanciabile
+  maxSpellLevel(character) {
+    const slots = this.spellSlots(character);
+    if (!slots) return 0;
+    if (Array.isArray(slots)) {
+      for (let i = slots.length - 1; i >= 0; i--) {
+        if (slots[i] > 0) return i + 1;
+      }
+      return 0;
+    }
+    return slots.level || 0;
+  },
+
+  // Genera la spiegazione testuale di come usare un'arma secondo le regole D&D
+  explainWeapon(weapon, character) {
+    if (!weapon) return '';
+    const parts = [];
+
+    if (weapon.damage && weapon.damage !== '—') {
+      parts.push(
+        `TIRO PER COLPIRE: 1d20 + modificatore di caratteristica + bonus di competenza, contro la CA del bersaglio.`
+      );
+      parts.push(
+        `DANNO se colpisci: ${weapon.damage} ${weapon.type || ''} + il modificatore di caratteristica. Con un 20 naturale (critico) tiri i dadi del danno due volte.`
+      );
+    } else {
+      parts.push('Arma speciale senza danno standard — vedi proprietà.');
+    }
+
+    // Caratteristica consigliata
+    const props = weapon.properties || [];
+    if (props.some(p => p.startsWith('Preciso'))) {
+      parts.push('CARATTERISTICA: di precisione — usa Forza o Destrezza, la migliore delle due.');
+    } else {
+      const isRanged = weapon._ranged;
+      parts.push(`CARATTERISTICA: usa ${isRanged ? 'Destrezza' : 'Forza'}.`);
+    }
+
+    // Proprietà
+    props.forEach(p => {
+      const key = p.split(' ')[0];
+      const baseKey = ['Versatile', 'Portata'].includes(key) ? key : p;
+      const info = DND.WEAPON_PROPERTIES[p] || DND.WEAPON_PROPERTIES[key] || DND.WEAPON_PROPERTIES[baseKey];
+      if (info) parts.push(info);
+      else parts.push(`Proprietà: ${p}.`);
+    });
+
+    return parts;
+  },
+
+  findWeapon(name) {
+    const groups = [
+      ['simple_melee', false], ['simple_ranged', true],
+      ['martial_melee', false], ['martial_ranged', true]
+    ];
+    for (const [grp, ranged] of groups) {
+      const found = (DND.WEAPONS[grp] || []).find(w => w.name === name);
+      if (found) return { ...found, _ranged: ranged };
+    }
+    return null;
   }
 };
