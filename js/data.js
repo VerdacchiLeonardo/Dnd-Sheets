@@ -47,6 +47,26 @@ const DND = {
   POINT_BUY_COSTS: { 8: 0, 9: 1, 10: 2, 11: 3, 12: 4, 13: 5, 14: 7, 15: 9 },
   STANDARD_ARRAY: [15, 14, 13, 12, 10, 8],
 
+  // Tema visivo per ogni classe: colore identificativo + stile particelle.
+  // motion: 'rise' (braci/combattimento) | 'float' (magia) | 'fall' (natura)
+  CLASS_THEMES: {
+    'Barbaro':     { color: '#e0503a', glow: 'rgba(224,80,58,0.45)',   motion: 'rise',  twinkle: 0.3,  density: 1.0, label: 'Furia',      essence: 'Braci di rabbia' },
+    'Bardo':       { color: '#dd72cc', glow: 'rgba(221,114,204,0.45)', motion: 'rise',  twinkle: 0.75, density: 1.1, label: 'Melodia',    essence: 'Note incantate' },
+    'Chierico':    { color: '#edd07e', glow: 'rgba(237,208,126,0.5)',  motion: 'rise',  twinkle: 0.6,  density: 1.0, label: 'Divino',     essence: 'Luce sacra' },
+    'Druido':      { color: '#5cc46e', glow: 'rgba(92,196,110,0.45)',  motion: 'fall',  twinkle: 0.4,  density: 1.1, label: 'Natura',     essence: 'Foglie nel vento' },
+    'Guerriero':   { color: '#d6473a', glow: 'rgba(214,71,58,0.45)',   motion: 'rise',  twinkle: 0.35, density: 1.0, label: 'Acciaio',    essence: 'Scintille di battaglia' },
+    'Monaco':      { color: '#56c8d8', glow: 'rgba(86,200,216,0.45)',  motion: 'float', twinkle: 0.5,  density: 0.9, label: 'Ki',         essence: 'Energia interiore' },
+    'Paladino':    { color: '#ecdc88', glow: 'rgba(236,220,136,0.5)',  motion: 'rise',  twinkle: 0.65, density: 1.0, label: 'Giuramento', essence: 'Aura radiosa' },
+    'Ranger':      { color: '#6aa84e', glow: 'rgba(106,168,78,0.45)',  motion: 'fall',  twinkle: 0.35, density: 1.0, label: 'Caccia',     essence: 'Spirito della foresta' },
+    'Ladro':       { color: '#9b8ab2', glow: 'rgba(155,138,178,0.42)', motion: 'float', twinkle: 0.3,  density: 0.85, label: 'Ombra',     essence: 'Sussurri nel buio' },
+    'Stregone':    { color: '#f0853e', glow: 'rgba(240,133,62,0.5)',   motion: 'float', twinkle: 0.85, density: 1.2, label: 'Caos',       essence: 'Magia selvaggia' },
+    'Warlock':     { color: '#5a6ae6', glow: 'rgba(90,106,230,0.55)',  motion: 'float', twinkle: 0.95, density: 1.35, label: 'Patto',     essence: 'Energia eldritch' },
+    'Mago':        { color: '#5a96e6', glow: 'rgba(90,150,230,0.5)',   motion: 'float', twinkle: 0.8,  density: 1.2, label: 'Arcano',     essence: 'Rune fluttuanti' },
+    'Artificiere': { color: '#d8902e', glow: 'rgba(216,144,46,0.45)',  motion: 'rise',  twinkle: 0.5,  density: 1.0, label: 'Ingegno',    essence: 'Faville meccaniche' }
+  },
+
+  DEFAULT_THEME: { color: '#c9a84c', glow: 'rgba(201,168,76,0.3)', motion: 'float', twinkle: 0.5, density: 1.0, label: '', essence: '' },
+
   RACES: {
     'Umano': {
       description: 'Versatili e ambiziosi, gli umani si adattano a qualsiasi ruolo e prosperano ovunque.',

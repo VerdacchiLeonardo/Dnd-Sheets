@@ -2251,6 +2251,156 @@ input:focus, textarea:focus, select:focus {
   .card, .view-section { border: 1px solid #ccc; }
 }
 
+/* =============================================
+   CLASS THEMING — colors & particles per class
+   ============================================= */
+
+/* ---- Character list cards ---- */
+.char-card:hover {
+  border-color: var(--cc, var(--gold-dim));
+  box-shadow: 0 14px 44px rgba(0,0,0,0.62), 0 0 28px var(--ccglow, rgba(201,168,76,0.1));
+}
+
+.char-card-image {
+  background: radial-gradient(ellipse at 50% 125%, var(--ccglow, rgba(201,168,76,0.12)), var(--bg2) 72%);
+}
+.char-card-image::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cc, var(--gold)), transparent);
+  z-index: 3;
+}
+
+.char-card-placeholder { color: var(--cc, var(--border2)); opacity: 0.55; }
+.char-card-level-badge { border-color: var(--cc, var(--gold-dim)); color: var(--cc, var(--gold)); }
+.char-card-class { color: var(--cc, var(--text2)); font-family: var(--font-h); font-size: 0.82rem; }
+
+.char-card-class-tag {
+  position: absolute;
+  top: 8px; left: 8px;
+  z-index: 4;
+  font-family: var(--font-h);
+  font-size: 0.58rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--cc, var(--gold));
+  background: rgba(4, 5, 12, 0.78);
+  border: 1px solid var(--cc, var(--gold-dim));
+  border-radius: 50px;
+  padding: 2px 8px;
+}
+
+/* ---- CSS particles inside card image ---- */
+.card-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 2;
+}
+.card-particles span {
+  position: absolute;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--cc, var(--gold));
+  box-shadow: 0 0 8px var(--cc, var(--gold)), 0 0 14px var(--ccglow, transparent);
+  opacity: 0;
+}
+.card-particles span:nth-child(1) { left: 12%; animation-delay: 0s; }
+.card-particles span:nth-child(2) { left: 27%; animation-delay: 1.3s; }
+.card-particles span:nth-child(3) { left: 42%; animation-delay: 2.6s; }
+.card-particles span:nth-child(4) { left: 57%; animation-delay: 0.8s; }
+.card-particles span:nth-child(5) { left: 71%; animation-delay: 2.0s; }
+.card-particles span:nth-child(6) { left: 85%; animation-delay: 3.3s; }
+.card-particles span:nth-child(7) { left: 50%; animation-delay: 1.7s; }
+
+.char-card.motion-rise  .card-particles span { animation: cardRise 5s ease-in infinite; }
+.char-card.motion-fall  .card-particles span { animation: cardFall 6.5s ease-out infinite; }
+.char-card.motion-float .card-particles span { animation: cardFloat 6s ease-in-out infinite; }
+
+@keyframes cardRise {
+  0%   { bottom: -10px; opacity: 0; transform: scale(0.5); }
+  20%  { opacity: 0.95; }
+  80%  { opacity: 0.6; }
+  100% { bottom: 102%; opacity: 0; transform: scale(1.05); }
+}
+@keyframes cardFall {
+  0%   { top: -10px; opacity: 0; transform: scale(0.5) translateX(0); }
+  20%  { opacity: 0.9; }
+  80%  { opacity: 0.55; }
+  100% { top: 102%; opacity: 0; transform: scale(1) translateX(16px); }
+}
+@keyframes cardFloat {
+  0%   { top: 85%; opacity: 0; transform: scale(0.45); }
+  25%  { opacity: 0.95; }
+  50%  { transform: scale(1.15) translateX(9px); }
+  75%  { opacity: 0.6; }
+  100% { top: 10%; opacity: 0; transform: scale(0.7) translateX(-7px); }
+}
+
+/* ---- Compass themed by selected class ---- */
+.compass-center {
+  border-color: var(--class-color, var(--gold-dim));
+  box-shadow: 0 0 36px var(--class-glow, rgba(201,168,76,0.1)), inset 0 0 30px rgba(0,0,0,0.55);
+}
+.compass-center-icon {
+  font-size: 1.7rem;
+  margin-bottom: 0.3rem;
+  line-height: 1;
+  animation: floatY 3s ease-in-out infinite;
+  filter: drop-shadow(0 0 8px var(--class-glow, rgba(201,168,76,0.3)));
+}
+.compass-center-name { color: var(--class-color, var(--gold)); }
+
+.compass-section.active::before {
+  border-color: var(--class-color, var(--gold));
+  box-shadow: 0 0 16px var(--class-color, var(--gold)), 0 0 34px var(--class-glow, rgba(201,168,76,0.3));
+}
+.compass-section.active .compass-section-label { color: var(--class-color, var(--gold)); }
+.compass-section.completed::before { border-color: var(--class-glow, rgba(201,168,76,0.5)); }
+.compass-section.completed .compass-section-icon::after { color: var(--class-color, var(--gold)); }
+.compass-section:hover {
+  border-color: var(--class-color, var(--gold-dim));
+  box-shadow: 0 0 22px var(--class-glow, rgba(201,168,76,0.2));
+}
+.compass-line {
+  background: linear-gradient(90deg, var(--class-color, var(--gold-dim)), transparent);
+}
+.step-dot.active {
+  background: var(--class-color, var(--gold));
+  box-shadow: 0 0 8px var(--class-color, var(--gold));
+}
+.step-dot.done { background: var(--class-glow, rgba(201,168,76,0.4)); }
+
+/* ---- View page themed by class ---- */
+.view-section-title { color: var(--class-color, var(--gold)); }
+.view-class { color: var(--class-color, var(--gold)); }
+.view-portrait { border-color: var(--class-color, var(--gold-dim)); }
+.view-portrait-placeholder {
+  border-color: var(--class-color, var(--border2));
+  color: var(--class-color, var(--text-dim));
+}
+
+/* ---- Profile management buttons (index) ---- */
+.profile-actions {
+  margin-top: 1.3rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+.btn-logout-danger {
+  border-color: rgba(196, 43, 43, 0.45);
+  color: #d98c8c;
+}
+.btn-logout-danger:hover {
+  border-color: var(--red2);
+  color: var(--red2);
+  background: rgba(139, 26, 26, 0.15);
+}
+
   </style>
 </head>
 <body>
@@ -2308,6 +2458,26 @@ const DND = {
 
   POINT_BUY_COSTS: { 8: 0, 9: 1, 10: 2, 11: 3, 12: 4, 13: 5, 14: 7, 15: 9 },
   STANDARD_ARRAY: [15, 14, 13, 12, 10, 8],
+
+  // Tema visivo per ogni classe: colore identificativo + stile particelle.
+  // motion: 'rise' (braci/combattimento) | 'float' (magia) | 'fall' (natura)
+  CLASS_THEMES: {
+    'Barbaro':     { color: '#e0503a', glow: 'rgba(224,80,58,0.45)',   motion: 'rise',  twinkle: 0.3,  density: 1.0, label: 'Furia',      essence: 'Braci di rabbia' },
+    'Bardo':       { color: '#dd72cc', glow: 'rgba(221,114,204,0.45)', motion: 'rise',  twinkle: 0.75, density: 1.1, label: 'Melodia',    essence: 'Note incantate' },
+    'Chierico':    { color: '#edd07e', glow: 'rgba(237,208,126,0.5)',  motion: 'rise',  twinkle: 0.6,  density: 1.0, label: 'Divino',     essence: 'Luce sacra' },
+    'Druido':      { color: '#5cc46e', glow: 'rgba(92,196,110,0.45)',  motion: 'fall',  twinkle: 0.4,  density: 1.1, label: 'Natura',     essence: 'Foglie nel vento' },
+    'Guerriero':   { color: '#d6473a', glow: 'rgba(214,71,58,0.45)',   motion: 'rise',  twinkle: 0.35, density: 1.0, label: 'Acciaio',    essence: 'Scintille di battaglia' },
+    'Monaco':      { color: '#56c8d8', glow: 'rgba(86,200,216,0.45)',  motion: 'float', twinkle: 0.5,  density: 0.9, label: 'Ki',         essence: 'Energia interiore' },
+    'Paladino':    { color: '#ecdc88', glow: 'rgba(236,220,136,0.5)',  motion: 'rise',  twinkle: 0.65, density: 1.0, label: 'Giuramento', essence: 'Aura radiosa' },
+    'Ranger':      { color: '#6aa84e', glow: 'rgba(106,168,78,0.45)',  motion: 'fall',  twinkle: 0.35, density: 1.0, label: 'Caccia',     essence: 'Spirito della foresta' },
+    'Ladro':       { color: '#9b8ab2', glow: 'rgba(155,138,178,0.42)', motion: 'float', twinkle: 0.3,  density: 0.85, label: 'Ombra',     essence: 'Sussurri nel buio' },
+    'Stregone':    { color: '#f0853e', glow: 'rgba(240,133,62,0.5)',   motion: 'float', twinkle: 0.85, density: 1.2, label: 'Caos',       essence: 'Magia selvaggia' },
+    'Warlock':     { color: '#5a6ae6', glow: 'rgba(90,106,230,0.55)',  motion: 'float', twinkle: 0.95, density: 1.35, label: 'Patto',     essence: 'Energia eldritch' },
+    'Mago':        { color: '#5a96e6', glow: 'rgba(90,150,230,0.5)',   motion: 'float', twinkle: 0.8,  density: 1.2, label: 'Arcano',     essence: 'Rune fluttuanti' },
+    'Artificiere': { color: '#d8902e', glow: 'rgba(216,144,46,0.45)',  motion: 'rise',  twinkle: 0.5,  density: 1.0, label: 'Ingegno',    essence: 'Faville meccaniche' }
+  },
+
+  DEFAULT_THEME: { color: '#c9a84c', glow: 'rgba(201,168,76,0.3)', motion: 'float', twinkle: 0.5, density: 1.0, label: '', essence: '' },
 
   RACES: {
     'Umano': {
@@ -3321,6 +3491,40 @@ const Storage = {
     localStorage.removeItem(this.KEYS.currentUser);
   },
 
+  cleanUsername(name) {
+    return (name || '').trim().toLowerCase().replace(/[^a-z0-9_\-àèìòù ]/gi, '').trim();
+  },
+
+  renameUser(oldName, newName) {
+    const clean = this.cleanUsername(newName);
+    if (!clean) return null;
+    if (clean === oldName) return oldName;
+    const users = this.getUsers();
+    if (users.includes(clean)) return 'EXISTS';
+    // Sposta i personaggi sotto la nuova chiave
+    const chars = this.getCharacters(oldName);
+    localStorage.setItem(this.KEYS.characters(clean), JSON.stringify(chars));
+    localStorage.removeItem(this.KEYS.characters(oldName));
+    // Aggiorna la lista utenti
+    const updated = users.filter(u => u !== oldName);
+    updated.push(clean);
+    localStorage.setItem(this.KEYS.users, JSON.stringify(updated));
+    // Aggiorna l'utente corrente
+    if (this.getCurrentUser() === oldName) {
+      localStorage.setItem(this.KEYS.currentUser, clean);
+    }
+    return clean;
+  },
+
+  deleteUser(name) {
+    if (!name) return false;
+    localStorage.removeItem(this.KEYS.characters(name));
+    const users = this.getUsers().filter(u => u !== name);
+    localStorage.setItem(this.KEYS.users, JSON.stringify(users));
+    if (this.getCurrentUser() === name) this.logout();
+    return true;
+  },
+
   getCharacters(user) {
     const u = user || this.getCurrentUser();
     if (!u) return [];
@@ -3803,8 +4007,10 @@ const Calc = {
           </a>
         </div>
 
-        <div style="margin-top:1.2rem;text-align:center">
-          <button class="btn-logout">Cambia Giocatore</button>
+        <div class="profile-actions">
+          <button class="btn-logout">⇄ Cambia Giocatore</button>
+          <button class="btn-logout" id="rename-player-btn">✎ Rinomina</button>
+          <button class="btn-logout btn-logout-danger" id="delete-player-btn">🗑 Elimina Profilo</button>
         </div>
       </div>
 
@@ -3903,7 +4109,7 @@ const Calc = {
 
         <!-- Center info -->
         <div class="compass-center">
-          <div style="font-size:1.5rem;margin-bottom:0.3rem;animation:floatY 3s ease-in-out infinite">⚔</div>
+          <div class="compass-center-icon" id="center-icon">⚔</div>
           <div class="compass-center-name" id="center-name">Il tuo eroe</div>
           <div class="compass-center-info" id="center-info">Clicca una sezione</div>
           <div class="compass-center-step" id="center-step">0 / 8 sezioni</div>
@@ -4220,12 +4426,28 @@ function getParam(key) {
   return new URLSearchParams(window.location.search).get(key);
 }
 
-// Particles background
-function initParticles(canvasId) {
+// Restituisce il tema visivo di una classe (colore + stile particelle)
+function getClassTheme(className) {
+  return (className && DND.CLASS_THEMES[className]) || DND.DEFAULT_THEME;
+}
+
+function hexToRgb(hex) {
+  const m = (hex || '#c9a84c').replace('#', '');
+  return {
+    r: parseInt(m.substring(0, 2), 16),
+    g: parseInt(m.substring(2, 4), 16),
+    b: parseInt(m.substring(4, 6), 16)
+  };
+}
+
+// Particles background — themed by class. Returns a controller with setTheme().
+function initParticles(canvasId, theme) {
   const canvas = document.getElementById(canvasId);
-  if (!canvas) return;
+  if (!canvas) return { setTheme() {} };
   const ctx = canvas.getContext('2d');
   let W, H, particles = [];
+  let current = theme || DND.DEFAULT_THEME;
+  let rgb = hexToRgb(current.color);
 
   function resize() {
     W = canvas.width = window.innerWidth;
@@ -4234,39 +4456,74 @@ function initParticles(canvasId) {
   resize();
   window.addEventListener('resize', resize);
 
+  function velocityFor(motion) {
+    if (motion === 'rise') return { vx: (Math.random() - 0.5) * 0.18, vy: -(Math.random() * 0.32 + 0.12) };
+    if (motion === 'fall') return { vx: (Math.random() - 0.5) * 0.22, vy: (Math.random() * 0.26 + 0.08) };
+    return { vx: (Math.random() - 0.5) * 0.14, vy: (Math.random() - 0.5) * 0.14 };
+  }
+
   function mkParticle() {
+    const v = velocityFor(current.motion);
     return {
       x: Math.random() * W,
       y: Math.random() * H,
-      r: Math.random() * 1.5 + 0.3,
-      vx: (Math.random() - 0.5) * 0.12,
-      vy: (Math.random() - 0.5) * 0.12,
-      alpha: Math.random() * 0.6 + 0.1,
-      pulse: Math.random() * Math.PI * 2
+      r: Math.random() * 1.7 + 0.4,
+      vx: v.vx, vy: v.vy,
+      alpha: Math.random() * 0.55 + 0.12,
+      pulse: Math.random() * Math.PI * 2,
+      pulseSpeed: 0.008 + Math.random() * 0.032
     };
   }
 
-  for (let i = 0; i < 120; i++) particles.push(mkParticle());
+  const count = Math.round(115 * (current.density || 1));
+  for (let i = 0; i < count; i++) particles.push(mkParticle());
 
   function draw() {
     ctx.clearRect(0, 0, W, H);
+    const tw = current.twinkle != null ? current.twinkle : 0.5;
     particles.forEach(p => {
-      p.pulse += 0.015;
-      const a = p.alpha * (0.7 + 0.3 * Math.sin(p.pulse));
+      p.pulse += p.pulseSpeed;
+      const a = p.alpha * ((1 - tw) + tw * (0.5 + 0.5 * Math.sin(p.pulse)));
+      // alone luminoso per le classi magiche
+      if (tw > 0.7) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r * 3, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${rgb.r},${rgb.g},${rgb.b},${a * 0.12})`;
+        ctx.fill();
+      }
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(201,168,76,${a})`;
+      ctx.fillStyle = `rgba(${rgb.r},${rgb.g},${rgb.b},${a})`;
       ctx.fill();
       p.x += p.vx;
       p.y += p.vy;
-      if (p.x < 0) p.x = W;
-      if (p.x > W) p.x = 0;
-      if (p.y < 0) p.y = H;
-      if (p.y > H) p.y = 0;
+      if (p.x < -6) p.x = W + 6;
+      if (p.x > W + 6) p.x = -6;
+      if (p.y < -6) { p.y = H + 6; p.x = Math.random() * W; }
+      if (p.y > H + 6) { p.y = -6; p.x = Math.random() * W; }
     });
     requestAnimationFrame(draw);
   }
   draw();
+
+  return {
+    setTheme(t) {
+      if (!t) return;
+      current = t;
+      rgb = hexToRgb(current.color);
+      particles.forEach(p => {
+        const v = velocityFor(current.motion);
+        p.vx = v.vx; p.vy = v.vy;
+      });
+    }
+  };
+}
+
+// Applica le variabili-tema della classe a un elemento (o all'intera pagina)
+function applyClassTheme(theme, el) {
+  const target = el || document.body;
+  target.style.setProperty('--class-color', theme.color);
+  target.style.setProperty('--class-glow', theme.glow);
 }
 
 // =============================================
@@ -4342,13 +4599,52 @@ function initIndexPage() {
     });
   }
 
-  // Logout
+  // Logout / Cambia giocatore
   const logoutBtns = document.querySelectorAll('.btn-logout');
   logoutBtns.forEach(b => b.addEventListener('click', () => {
     Storage.logout();
     showLogin();
     renderUserList();
   }));
+
+  // Rinomina profilo
+  const renameBtn = document.getElementById('rename-player-btn');
+  if (renameBtn) {
+    renameBtn.addEventListener('click', () => {
+      const cur = Storage.getCurrentUser();
+      if (!cur) return;
+      const newName = prompt('Nuovo nome del profilo:', cur);
+      if (newName === null) return;
+      const result = Storage.renameUser(cur, newName);
+      if (result === 'EXISTS') {
+        showToast('Esiste già un profilo con questo nome', 'error');
+      } else if (result) {
+        showWelcome(result);
+        renderUserList();
+        showToast('Profilo rinominato ✦');
+      } else {
+        showToast('Nome non valido', 'error');
+      }
+    });
+  }
+
+  // Elimina profilo
+  const deleteBtn = document.getElementById('delete-player-btn');
+  if (deleteBtn) {
+    deleteBtn.addEventListener('click', () => {
+      const cur = Storage.getCurrentUser();
+      if (!cur) return;
+      const count = Storage.getCharacters(cur).length;
+      const msg = count > 0
+        ? `Eliminare il profilo "${cur}" e i suoi ${count} personaggi? L'azione è irreversibile.`
+        : `Eliminare il profilo "${cur}"?`;
+      if (!confirm(msg)) return;
+      Storage.deleteUser(cur);
+      showLogin();
+      renderUserList();
+      showToast('Profilo eliminato');
+    });
+  }
 }
 
 // =============================================
@@ -4395,8 +4691,11 @@ function initCharsPage() {
   }
 
   function buildCharCard(char) {
+    const theme = getClassTheme(char.identity.class);
     const card = document.createElement('div');
-    card.className = 'char-card animate-in';
+    card.className = `char-card animate-in motion-${theme.motion}`;
+    card.style.setProperty('--cc', theme.color);
+    card.style.setProperty('--ccglow', theme.glow);
 
     const imgHtml = char.appearance?.image
       ? `<img src="${char.appearance.image}" alt="${char.identity.name}">`
@@ -4406,10 +4705,17 @@ function initCharsPage() {
     const className = char.identity.class || '—';
     const raceName = char.identity.race || '—';
 
+    // Particelle decorative CSS, colorate in base alla classe
+    const particles = char.identity.class
+      ? `<div class="card-particles">${'<span></span>'.repeat(7)}</div>`
+      : '';
+
     card.innerHTML = `
       <div class="char-card-image">
         ${imgHtml}
+        ${particles}
         <div class="char-card-level-badge">Lv ${level}</div>
+        ${char.identity.class ? `<div class="char-card-class-tag">${theme.label}</div>` : ''}
       </div>
       <div class="char-card-body">
         <div class="char-card-name">${char.identity.name || 'Senza Nome'}</div>
@@ -4453,8 +4759,6 @@ function getClassIcon(cls) {
 // =============================================
 
 function initCreatePage() {
-  initParticles('particles-canvas');
-
   const user = Storage.getCurrentUser();
   if (!user) { location.hash='index'; return; }
 
@@ -4469,6 +4773,17 @@ function initCreatePage() {
   const charId = getParam('id');
   let character = charId ? Storage.getCharacter(charId, user) : null;
   if (!character) character = Storage.newCharacter();
+
+  // Particelle tematiche in base alla classe del personaggio
+  const particleCtrl = initParticles('particles-canvas', getClassTheme(character.identity.class));
+
+  // Applica il tema-classe alla pagina (bussola, particelle, accenti)
+  function applyCreateTheme() {
+    const theme = getClassTheme(character.identity.class);
+    applyClassTheme(theme);
+    particleCtrl.setTheme(theme);
+  }
+  applyCreateTheme();
 
   // Section definitions
   const SECTIONS = [
@@ -4573,9 +4888,11 @@ function initCreatePage() {
   }
 
   function updateCompassCenter() {
+    const iconEl = document.getElementById('center-icon');
     const nameEl = document.getElementById('center-name');
     const infoEl = document.getElementById('center-info');
     const stepEl = document.getElementById('center-step');
+    if (iconEl) iconEl.textContent = character.identity.class ? getClassIcon(character.identity.class) : '⚔';
     if (nameEl) nameEl.textContent = character.identity.name || 'Il tuo eroe';
     if (infoEl) {
       const parts = [character.identity.class, character.identity.race].filter(Boolean);
@@ -4817,7 +5134,10 @@ function initCreatePage() {
           document.getElementById('subclass-wrap').style.display = 'none';
         }
         Calc.autoCalculate(character);
+        applyCreateTheme();
+        updateCompassCenter();
         autoSave();
+        showToast(`Classe: ${name} — ${getClassTheme(name).essence}`);
       });
       p.appendChild(item);
     });
@@ -6097,7 +6417,6 @@ function initCreatePage() {
 // =============================================
 
 function initViewPage() {
-  initParticles('particles-canvas');
   const user = Storage.getCurrentUser();
   if (!user) { location.hash='index'; return; }
 
@@ -6109,6 +6428,11 @@ function initViewPage() {
   if (!character) { location.hash='chars'; return; }
 
   Calc.autoCalculate(character);
+
+  // Tema visivo della classe
+  const theme = getClassTheme(character.identity.class);
+  applyClassTheme(theme);
+  initParticles('particles-canvas', theme);
 
   document.querySelectorAll('.btn-logout').forEach(b => b.addEventListener('click', () => {
     Storage.logout(); location.hash='index';

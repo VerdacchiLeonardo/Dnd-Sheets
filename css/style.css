@@ -2239,3 +2239,153 @@ input:focus, textarea:focus, select:focus {
   .view-header-bg { opacity: 0.05; }
   .card, .view-section { border: 1px solid #ccc; }
 }
+
+/* =============================================
+   CLASS THEMING — colors & particles per class
+   ============================================= */
+
+/* ---- Character list cards ---- */
+.char-card:hover {
+  border-color: var(--cc, var(--gold-dim));
+  box-shadow: 0 14px 44px rgba(0,0,0,0.62), 0 0 28px var(--ccglow, rgba(201,168,76,0.1));
+}
+
+.char-card-image {
+  background: radial-gradient(ellipse at 50% 125%, var(--ccglow, rgba(201,168,76,0.12)), var(--bg2) 72%);
+}
+.char-card-image::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cc, var(--gold)), transparent);
+  z-index: 3;
+}
+
+.char-card-placeholder { color: var(--cc, var(--border2)); opacity: 0.55; }
+.char-card-level-badge { border-color: var(--cc, var(--gold-dim)); color: var(--cc, var(--gold)); }
+.char-card-class { color: var(--cc, var(--text2)); font-family: var(--font-h); font-size: 0.82rem; }
+
+.char-card-class-tag {
+  position: absolute;
+  top: 8px; left: 8px;
+  z-index: 4;
+  font-family: var(--font-h);
+  font-size: 0.58rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--cc, var(--gold));
+  background: rgba(4, 5, 12, 0.78);
+  border: 1px solid var(--cc, var(--gold-dim));
+  border-radius: 50px;
+  padding: 2px 8px;
+}
+
+/* ---- CSS particles inside card image ---- */
+.card-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 2;
+}
+.card-particles span {
+  position: absolute;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--cc, var(--gold));
+  box-shadow: 0 0 8px var(--cc, var(--gold)), 0 0 14px var(--ccglow, transparent);
+  opacity: 0;
+}
+.card-particles span:nth-child(1) { left: 12%; animation-delay: 0s; }
+.card-particles span:nth-child(2) { left: 27%; animation-delay: 1.3s; }
+.card-particles span:nth-child(3) { left: 42%; animation-delay: 2.6s; }
+.card-particles span:nth-child(4) { left: 57%; animation-delay: 0.8s; }
+.card-particles span:nth-child(5) { left: 71%; animation-delay: 2.0s; }
+.card-particles span:nth-child(6) { left: 85%; animation-delay: 3.3s; }
+.card-particles span:nth-child(7) { left: 50%; animation-delay: 1.7s; }
+
+.char-card.motion-rise  .card-particles span { animation: cardRise 5s ease-in infinite; }
+.char-card.motion-fall  .card-particles span { animation: cardFall 6.5s ease-out infinite; }
+.char-card.motion-float .card-particles span { animation: cardFloat 6s ease-in-out infinite; }
+
+@keyframes cardRise {
+  0%   { bottom: -10px; opacity: 0; transform: scale(0.5); }
+  20%  { opacity: 0.95; }
+  80%  { opacity: 0.6; }
+  100% { bottom: 102%; opacity: 0; transform: scale(1.05); }
+}
+@keyframes cardFall {
+  0%   { top: -10px; opacity: 0; transform: scale(0.5) translateX(0); }
+  20%  { opacity: 0.9; }
+  80%  { opacity: 0.55; }
+  100% { top: 102%; opacity: 0; transform: scale(1) translateX(16px); }
+}
+@keyframes cardFloat {
+  0%   { top: 85%; opacity: 0; transform: scale(0.45); }
+  25%  { opacity: 0.95; }
+  50%  { transform: scale(1.15) translateX(9px); }
+  75%  { opacity: 0.6; }
+  100% { top: 10%; opacity: 0; transform: scale(0.7) translateX(-7px); }
+}
+
+/* ---- Compass themed by selected class ---- */
+.compass-center {
+  border-color: var(--class-color, var(--gold-dim));
+  box-shadow: 0 0 36px var(--class-glow, rgba(201,168,76,0.1)), inset 0 0 30px rgba(0,0,0,0.55);
+}
+.compass-center-icon {
+  font-size: 1.7rem;
+  margin-bottom: 0.3rem;
+  line-height: 1;
+  animation: floatY 3s ease-in-out infinite;
+  filter: drop-shadow(0 0 8px var(--class-glow, rgba(201,168,76,0.3)));
+}
+.compass-center-name { color: var(--class-color, var(--gold)); }
+
+.compass-section.active::before {
+  border-color: var(--class-color, var(--gold));
+  box-shadow: 0 0 16px var(--class-color, var(--gold)), 0 0 34px var(--class-glow, rgba(201,168,76,0.3));
+}
+.compass-section.active .compass-section-label { color: var(--class-color, var(--gold)); }
+.compass-section.completed::before { border-color: var(--class-glow, rgba(201,168,76,0.5)); }
+.compass-section.completed .compass-section-icon::after { color: var(--class-color, var(--gold)); }
+.compass-section:hover {
+  border-color: var(--class-color, var(--gold-dim));
+  box-shadow: 0 0 22px var(--class-glow, rgba(201,168,76,0.2));
+}
+.compass-line {
+  background: linear-gradient(90deg, var(--class-color, var(--gold-dim)), transparent);
+}
+.step-dot.active {
+  background: var(--class-color, var(--gold));
+  box-shadow: 0 0 8px var(--class-color, var(--gold));
+}
+.step-dot.done { background: var(--class-glow, rgba(201,168,76,0.4)); }
+
+/* ---- View page themed by class ---- */
+.view-section-title { color: var(--class-color, var(--gold)); }
+.view-class { color: var(--class-color, var(--gold)); }
+.view-portrait { border-color: var(--class-color, var(--gold-dim)); }
+.view-portrait-placeholder {
+  border-color: var(--class-color, var(--border2));
+  color: var(--class-color, var(--text-dim));
+}
+
+/* ---- Profile management buttons (index) ---- */
+.profile-actions {
+  margin-top: 1.3rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+.btn-logout-danger {
+  border-color: rgba(196, 43, 43, 0.45);
+  color: #d98c8c;
+}
+.btn-logout-danger:hover {
+  border-color: var(--red2);
+  color: var(--red2);
+  background: rgba(139, 26, 26, 0.15);
+}

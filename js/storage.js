@@ -34,6 +34,40 @@ const Storage = {
     localStorage.removeItem(this.KEYS.currentUser);
   },
 
+  cleanUsername(name) {
+    return (name || '').trim().toLowerCase().replace(/[^a-z0-9_\-àèìòù ]/gi, '').trim();
+  },
+
+  renameUser(oldName, newName) {
+    const clean = this.cleanUsername(newName);
+    if (!clean) return null;
+    if (clean === oldName) return oldName;
+    const users = this.getUsers();
+    if (users.includes(clean)) return 'EXISTS';
+    // Sposta i personaggi sotto la nuova chiave
+    const chars = this.getCharacters(oldName);
+    localStorage.setItem(this.KEYS.characters(clean), JSON.stringify(chars));
+    localStorage.removeItem(this.KEYS.characters(oldName));
+    // Aggiorna la lista utenti
+    const updated = users.filter(u => u !== oldName);
+    updated.push(clean);
+    localStorage.setItem(this.KEYS.users, JSON.stringify(updated));
+    // Aggiorna l'utente corrente
+    if (this.getCurrentUser() === oldName) {
+      localStorage.setItem(this.KEYS.currentUser, clean);
+    }
+    return clean;
+  },
+
+  deleteUser(name) {
+    if (!name) return false;
+    localStorage.removeItem(this.KEYS.characters(name));
+    const users = this.getUsers().filter(u => u !== name);
+    localStorage.setItem(this.KEYS.users, JSON.stringify(users));
+    if (this.getCurrentUser() === name) this.logout();
+    return true;
+  },
+
   getCharacters(user) {
     const u = user || this.getCurrentUser();
     if (!u) return [];

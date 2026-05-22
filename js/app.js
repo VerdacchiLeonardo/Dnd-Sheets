@@ -26,12 +26,28 @@ function getParam(key) {
   return new URLSearchParams(window.location.search).get(key);
 }
 
-// Particles background
-function initParticles(canvasId) {
+// Restituisce il tema visivo di una classe (colore + stile particelle)
+function getClassTheme(className) {
+  return (className && DND.CLASS_THEMES[className]) || DND.DEFAULT_THEME;
+}
+
+function hexToRgb(hex) {
+  const m = (hex || '#c9a84c').replace('#', '');
+  return {
+    r: parseInt(m.substring(0, 2), 16),
+    g: parseInt(m.substring(2, 4), 16),
+    b: parseInt(m.substring(4, 6), 16)
+  };
+}
+
+// Particles background — themed by class. Returns a controller with setTheme().
+function initParticles(canvasId, theme) {
   const canvas = document.getElementById(canvasId);
-  if (!canvas) return;
+  if (!canvas) return { setTheme() {} };
   const ctx = canvas.getContext('2d');
   let W, H, particles = [];
+  let current = theme || DND.DEFAULT_THEME;
+  let rgb = hexToRgb(current.color);
 
   function resize() {
     W = canvas.width = window.innerWidth;
@@ -40,39 +56,74 @@ function initParticles(canvasId) {
   resize();
   window.addEventListener('resize', resize);
 
+  function velocityFor(motion) {
+    if (motion === 'rise') return { vx: (Math.random() - 0.5) * 0.18, vy: -(Math.random() * 0.32 + 0.12) };
+    if (motion === 'fall') return { vx: (Math.random() - 0.5) * 0.22, vy: (Math.random() * 0.26 + 0.08) };
+    return { vx: (Math.random() - 0.5) * 0.14, vy: (Math.random() - 0.5) * 0.14 };
+  }
+
   function mkParticle() {
+    const v = velocityFor(current.motion);
     return {
       x: Math.random() * W,
       y: Math.random() * H,
-      r: Math.random() * 1.5 + 0.3,
-      vx: (Math.random() - 0.5) * 0.12,
-      vy: (Math.random() - 0.5) * 0.12,
-      alpha: Math.random() * 0.6 + 0.1,
-      pulse: Math.random() * Math.PI * 2
+      r: Math.random() * 1.7 + 0.4,
+      vx: v.vx, vy: v.vy,
+      alpha: Math.random() * 0.55 + 0.12,
+      pulse: Math.random() * Math.PI * 2,
+      pulseSpeed: 0.008 + Math.random() * 0.032
     };
   }
 
-  for (let i = 0; i < 120; i++) particles.push(mkParticle());
+  const count = Math.round(115 * (current.density || 1));
+  for (let i = 0; i < count; i++) particles.push(mkParticle());
 
   function draw() {
     ctx.clearRect(0, 0, W, H);
+    const tw = current.twinkle != null ? current.twinkle : 0.5;
     particles.forEach(p => {
-      p.pulse += 0.015;
-      const a = p.alpha * (0.7 + 0.3 * Math.sin(p.pulse));
+      p.pulse += p.pulseSpeed;
+      const a = p.alpha * ((1 - tw) + tw * (0.5 + 0.5 * Math.sin(p.pulse)));
+      // alone luminoso per le classi magiche
+      if (tw > 0.7) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r * 3, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${rgb.r},${rgb.g},${rgb.b},${a * 0.12})`;
+        ctx.fill();
+      }
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(201,168,76,${a})`;
+      ctx.fillStyle = `rgba(${rgb.r},${rgb.g},${rgb.b},${a})`;
       ctx.fill();
       p.x += p.vx;
       p.y += p.vy;
-      if (p.x < 0) p.x = W;
-      if (p.x > W) p.x = 0;
-      if (p.y < 0) p.y = H;
-      if (p.y > H) p.y = 0;
+      if (p.x < -6) p.x = W + 6;
+      if (p.x > W + 6) p.x = -6;
+      if (p.y < -6) { p.y = H + 6; p.x = Math.random() * W; }
+      if (p.y > H + 6) { p.y = -6; p.x = Math.random() * W; }
     });
     requestAnimationFrame(draw);
   }
   draw();
+
+  return {
+    setTheme(t) {
+      if (!t) return;
+      current = t;
+      rgb = hexToRgb(current.color);
+      particles.forEach(p => {
+        const v = velocityFor(current.motion);
+        p.vx = v.vx; p.vy = v.vy;
+      });
+    }
+  };
+}
+
+// Applica le variabili-tema della classe a un elemento (o all'intera pagina)
+function applyClassTheme(theme, el) {
+  const target = el || document.body;
+  target.style.setProperty('--class-color', theme.color);
+  target.style.setProperty('--class-glow', theme.glow);
 }
 
 // =============================================
@@ -148,13 +199,52 @@ function initIndexPage() {
     });
   }
 
-  // Logout
+  // Logout / Cambia giocatore
   const logoutBtns = document.querySelectorAll('.btn-logout');
   logoutBtns.forEach(b => b.addEventListener('click', () => {
     Storage.logout();
     showLogin();
     renderUserList();
   }));
+
+  // Rinomina profilo
+  const renameBtn = document.getElementById('rename-player-btn');
+  if (renameBtn) {
+    renameBtn.addEventListener('click', () => {
+      const cur = Storage.getCurrentUser();
+      if (!cur) return;
+      const newName = prompt('Nuovo nome del profilo:', cur);
+      if (newName === null) return;
+      const result = Storage.renameUser(cur, newName);
+      if (result === 'EXISTS') {
+        showToast('Esiste già un profilo con questo nome', 'error');
+      } else if (result) {
+        showWelcome(result);
+        renderUserList();
+        showToast('Profilo rinominato ✦');
+      } else {
+        showToast('Nome non valido', 'error');
+      }
+    });
+  }
+
+  // Elimina profilo
+  const deleteBtn = document.getElementById('delete-player-btn');
+  if (deleteBtn) {
+    deleteBtn.addEventListener('click', () => {
+      const cur = Storage.getCurrentUser();
+      if (!cur) return;
+      const count = Storage.getCharacters(cur).length;
+      const msg = count > 0
+        ? `Eliminare il profilo "${cur}" e i suoi ${count} personaggi? L'azione è irreversibile.`
+        : `Eliminare il profilo "${cur}"?`;
+      if (!confirm(msg)) return;
+      Storage.deleteUser(cur);
+      showLogin();
+      renderUserList();
+      showToast('Profilo eliminato');
+    });
+  }
 }
 
 // =============================================
@@ -201,8 +291,11 @@ function initCharsPage() {
   }
 
   function buildCharCard(char) {
+    const theme = getClassTheme(char.identity.class);
     const card = document.createElement('div');
-    card.className = 'char-card animate-in';
+    card.className = `char-card animate-in motion-${theme.motion}`;
+    card.style.setProperty('--cc', theme.color);
+    card.style.setProperty('--ccglow', theme.glow);
 
     const imgHtml = char.appearance?.image
       ? `<img src="${char.appearance.image}" alt="${char.identity.name}">`
@@ -212,10 +305,17 @@ function initCharsPage() {
     const className = char.identity.class || '—';
     const raceName = char.identity.race || '—';
 
+    // Particelle decorative CSS, colorate in base alla classe
+    const particles = char.identity.class
+      ? `<div class="card-particles">${'<span></span>'.repeat(7)}</div>`
+      : '';
+
     card.innerHTML = `
       <div class="char-card-image">
         ${imgHtml}
+        ${particles}
         <div class="char-card-level-badge">Lv ${level}</div>
+        ${char.identity.class ? `<div class="char-card-class-tag">${theme.label}</div>` : ''}
       </div>
       <div class="char-card-body">
         <div class="char-card-name">${char.identity.name || 'Senza Nome'}</div>
@@ -259,8 +359,6 @@ function getClassIcon(cls) {
 // =============================================
 
 function initCreatePage() {
-  initParticles('particles-canvas');
-
   const user = Storage.getCurrentUser();
   if (!user) { window.location.href = 'index.html'; return; }
 
@@ -275,6 +373,17 @@ function initCreatePage() {
   const charId = getParam('id');
   let character = charId ? Storage.getCharacter(charId, user) : null;
   if (!character) character = Storage.newCharacter();
+
+  // Particelle tematiche in base alla classe del personaggio
+  const particleCtrl = initParticles('particles-canvas', getClassTheme(character.identity.class));
+
+  // Applica il tema-classe alla pagina (bussola, particelle, accenti)
+  function applyCreateTheme() {
+    const theme = getClassTheme(character.identity.class);
+    applyClassTheme(theme);
+    particleCtrl.setTheme(theme);
+  }
+  applyCreateTheme();
 
   // Section definitions
   const SECTIONS = [
@@ -379,9 +488,11 @@ function initCreatePage() {
   }
 
   function updateCompassCenter() {
+    const iconEl = document.getElementById('center-icon');
     const nameEl = document.getElementById('center-name');
     const infoEl = document.getElementById('center-info');
     const stepEl = document.getElementById('center-step');
+    if (iconEl) iconEl.textContent = character.identity.class ? getClassIcon(character.identity.class) : '⚔';
     if (nameEl) nameEl.textContent = character.identity.name || 'Il tuo eroe';
     if (infoEl) {
       const parts = [character.identity.class, character.identity.race].filter(Boolean);
@@ -623,7 +734,10 @@ function initCreatePage() {
           document.getElementById('subclass-wrap').style.display = 'none';
         }
         Calc.autoCalculate(character);
+        applyCreateTheme();
+        updateCompassCenter();
         autoSave();
+        showToast(`Classe: ${name} — ${getClassTheme(name).essence}`);
       });
       p.appendChild(item);
     });
@@ -1903,7 +2017,6 @@ function initCreatePage() {
 // =============================================
 
 function initViewPage() {
-  initParticles('particles-canvas');
   const user = Storage.getCurrentUser();
   if (!user) { window.location.href = 'index.html'; return; }
 
@@ -1915,6 +2028,11 @@ function initViewPage() {
   if (!character) { window.location.href = 'characters.html'; return; }
 
   Calc.autoCalculate(character);
+
+  // Tema visivo della classe
+  const theme = getClassTheme(character.identity.class);
+  applyClassTheme(theme);
+  initParticles('particles-canvas', theme);
 
   document.querySelectorAll('.btn-logout').forEach(b => b.addEventListener('click', () => {
     Storage.logout(); window.location.href = 'index.html';
