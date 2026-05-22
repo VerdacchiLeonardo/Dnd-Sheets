@@ -2536,3 +2536,142 @@ code {
   border-radius: 50px;
   padding: 1px 8px;
 }
+
+/* =============================================
+   CATCHPHRASE — frase ad effetto luminosa
+   ============================================= */
+.catchphrase {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.9rem;
+  padding: 0.6rem 0.9rem;
+  background: rgba(13, 16, 30, 0.55);
+  border: 1px solid var(--class-color, var(--gold-dim));
+  border-radius: var(--r);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  max-width: 540px;
+}
+
+.catchphrase-icon {
+  font-size: 1.1rem;
+  color: var(--class-color, var(--gold));
+  filter: drop-shadow(0 0 6px var(--class-color, var(--gold)));
+  animation: cpIconPulse 3s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.catchphrase-text {
+  flex: 1;
+  font-family: var(--font-b);
+  font-style: italic;
+  font-size: 0.96rem;
+  line-height: 1.4;
+  color: var(--white);
+  text-shadow: 0 0 10px var(--class-glow, rgba(201,168,76,0.45)),
+               0 0 24px var(--class-glow, rgba(201,168,76,0.22));
+  animation: cpGlow 4.5s ease-in-out infinite;
+}
+
+.catchphrase-edit {
+  flex-shrink: 0;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+}
+.catchphrase-edit:hover {
+  border-color: var(--class-color, var(--gold));
+  color: var(--class-color, var(--gold));
+}
+
+@keyframes cpIconPulse {
+  0%, 100% { transform: scale(1); opacity: 0.85; }
+  50%      { transform: scale(1.18); opacity: 1; }
+}
+@keyframes cpGlow {
+  0%, 100% { text-shadow: 0 0 8px var(--class-glow, rgba(201,168,76,0.35)),
+                          0 0 16px var(--class-glow, rgba(201,168,76,0.15)); }
+  50%      { text-shadow: 0 0 14px var(--class-glow, rgba(201,168,76,0.6)),
+                          0 0 34px var(--class-glow, rgba(201,168,76,0.3)); }
+}
+
+/* =============================================
+   CLICKABLE ROWS — weapons & spells in view page
+   ============================================= */
+.clickable-row {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.clickable-row:hover td { background: rgba(201, 168, 76, 0.06); }
+
+.row-info {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  transition: color 0.2s;
+}
+.clickable-row:hover .row-info { color: var(--gold); }
+
+.clickable-spell { cursor: pointer; }
+
+/* =============================================
+   CATCHPHRASE MANAGEMENT MODAL
+   ============================================= */
+.cp-group-title {
+  font-family: var(--font-h);
+  font-size: 0.68rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin: 1rem 0 0.4rem;
+}
+
+.cp-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.4rem;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.cp-row.pinned {
+  background: rgba(201, 168, 76, 0.08);
+  border-radius: var(--r);
+}
+.cp-row.disabled .cp-text,
+.cp-row.disabled .cp-edit-input { opacity: 0.4; }
+
+.cp-text {
+  flex: 1;
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--text);
+}
+.cp-edit-input {
+  flex: 1;
+  font-size: 0.82rem !important;
+  padding: 0.3rem 0.5rem !important;
+  font-style: italic;
+}
+
+.cp-pin, .cp-toggle, .cp-del {
+  flex-shrink: 0;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.18s;
+}
+.cp-pin:hover, .cp-toggle:hover { border-color: var(--gold); }
+.cp-row.pinned .cp-pin { border-color: var(--gold); background: rgba(201,168,76,0.15); }
+.cp-del { color: var(--text-dim); }
+.cp-del:hover { border-color: var(--red2); color: var(--red2); }

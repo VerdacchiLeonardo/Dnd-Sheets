@@ -273,6 +273,11 @@ const Storage = {
         powers: [],
         notes: ''
       },
+      catchphrase: {
+        custom: [],     // frasi scritte dall'utente
+        disabled: [],   // frasi escluse dal pool casuale
+        pinned: null    // frase fissata (mostrata sempre) oppure null
+      },
       features_traits: [],
       languages: [],
       proficiency_bonus: 2

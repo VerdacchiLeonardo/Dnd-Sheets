@@ -2555,6 +2555,145 @@ code {
   padding: 1px 8px;
 }
 
+/* =============================================
+   CATCHPHRASE — frase ad effetto luminosa
+   ============================================= */
+.catchphrase {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.9rem;
+  padding: 0.6rem 0.9rem;
+  background: rgba(13, 16, 30, 0.55);
+  border: 1px solid var(--class-color, var(--gold-dim));
+  border-radius: var(--r);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  max-width: 540px;
+}
+
+.catchphrase-icon {
+  font-size: 1.1rem;
+  color: var(--class-color, var(--gold));
+  filter: drop-shadow(0 0 6px var(--class-color, var(--gold)));
+  animation: cpIconPulse 3s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.catchphrase-text {
+  flex: 1;
+  font-family: var(--font-b);
+  font-style: italic;
+  font-size: 0.96rem;
+  line-height: 1.4;
+  color: var(--white);
+  text-shadow: 0 0 10px var(--class-glow, rgba(201,168,76,0.45)),
+               0 0 24px var(--class-glow, rgba(201,168,76,0.22));
+  animation: cpGlow 4.5s ease-in-out infinite;
+}
+
+.catchphrase-edit {
+  flex-shrink: 0;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+}
+.catchphrase-edit:hover {
+  border-color: var(--class-color, var(--gold));
+  color: var(--class-color, var(--gold));
+}
+
+@keyframes cpIconPulse {
+  0%, 100% { transform: scale(1); opacity: 0.85; }
+  50%      { transform: scale(1.18); opacity: 1; }
+}
+@keyframes cpGlow {
+  0%, 100% { text-shadow: 0 0 8px var(--class-glow, rgba(201,168,76,0.35)),
+                          0 0 16px var(--class-glow, rgba(201,168,76,0.15)); }
+  50%      { text-shadow: 0 0 14px var(--class-glow, rgba(201,168,76,0.6)),
+                          0 0 34px var(--class-glow, rgba(201,168,76,0.3)); }
+}
+
+/* =============================================
+   CLICKABLE ROWS — weapons & spells in view page
+   ============================================= */
+.clickable-row {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.clickable-row:hover td { background: rgba(201, 168, 76, 0.06); }
+
+.row-info {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  transition: color 0.2s;
+}
+.clickable-row:hover .row-info { color: var(--gold); }
+
+.clickable-spell { cursor: pointer; }
+
+/* =============================================
+   CATCHPHRASE MANAGEMENT MODAL
+   ============================================= */
+.cp-group-title {
+  font-family: var(--font-h);
+  font-size: 0.68rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin: 1rem 0 0.4rem;
+}
+
+.cp-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.4rem;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.cp-row.pinned {
+  background: rgba(201, 168, 76, 0.08);
+  border-radius: var(--r);
+}
+.cp-row.disabled .cp-text,
+.cp-row.disabled .cp-edit-input { opacity: 0.4; }
+
+.cp-text {
+  flex: 1;
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--text);
+}
+.cp-edit-input {
+  flex: 1;
+  font-size: 0.82rem !important;
+  padding: 0.3rem 0.5rem !important;
+  font-style: italic;
+}
+
+.cp-pin, .cp-toggle, .cp-del {
+  flex-shrink: 0;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.18s;
+}
+.cp-pin:hover, .cp-toggle:hover { border-color: var(--gold); }
+.cp-row.pinned .cp-pin { border-color: var(--gold); background: rgba(201,168,76,0.15); }
+.cp-del { color: var(--text-dim); }
+.cp-del:hover { border-color: var(--red2); color: var(--red2); }
+
   </style>
 </head>
 <body>
@@ -3884,6 +4023,11 @@ const Storage = {
         powers: [],
         notes: ''
       },
+      catchphrase: {
+        custom: [],     // frasi scritte dall'utente
+        disabled: [],   // frasi escluse dal pool casuale
+        pinned: null    // frase fissata (mostrata sempre) oppure null
+      },
       features_traits: [],
       languages: [],
       proficiency_bonus: 2
@@ -4461,6 +4605,14 @@ const Calc = {
             <span class="meta-tag" id="view-background"></span>
             <span class="meta-tag" id="view-subrace"></span>
           </div>
+
+          <!-- Frase ad effetto luminosa -->
+          <div class="catchphrase" id="catchphrase">
+            <span class="catchphrase-icon">✦</span>
+            <span class="catchphrase-text" id="catchphrase-text"></span>
+            <button class="catchphrase-edit" id="catchphrase-edit" title="Gestisci le frasi ad effetto">✎</button>
+          </div>
+
           <div style="display:flex;gap:0.8rem;margin-top:1rem;flex-wrap:wrap">
             <button class="btn btn-primary btn-sm" id="edit-btn">✎ Modifica</button>
             <button class="btn btn-secondary btn-sm" id="print-btn">🖨 Stampa</button>
@@ -5145,6 +5297,234 @@ function getClassIcon(cls) {
   };
   return icons[cls] || '⚔';
 }
+
+// =============================================
+// SHARED DETAIL MODALS (spells & weapons)
+// =============================================
+
+// Trova un incantesimo per nome e ne restituisce dati + livello
+function findSpellData(name) {
+  for (const [key, list] of Object.entries(DND.SPELLS)) {
+    const spell = list.find(s => s.name === name);
+    if (spell) {
+      const level = key === 'cantrips' ? 0 : parseInt(key.replace('level', ''));
+      return { ...spell, _level: level };
+    }
+  }
+  return null;
+}
+
+function spellLevelLabel(lvl) {
+  return lvl === 0 ? 'Trucchetto' : `${lvl}° livello`;
+}
+
+// Popup di dettaglio incantesimo.
+// opts.character (opzionale): se presente mostra il pulsante aggiungi/rimuovi
+// opts.onChange (opzionale): callback dopo una modifica
+function showSpellModal(spellName, opts) {
+  opts = opts || {};
+  const spell = findSpellData(spellName);
+  if (!spell) { showToast('Dettagli non disponibili', 'error'); return; }
+
+  let modal = document.getElementById('spell-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'spell-modal';
+    modal.className = 'spell-modal-overlay';
+    document.body.appendChild(modal);
+  }
+
+  const isCantrip = spell._level === 0;
+  const char = opts.character;
+  const known = char ? char.spells.known.includes(spellName) : false;
+
+  modal.innerHTML = `
+    <div class="spell-modal-card">
+      <button class="spell-modal-close" id="spell-modal-close">✕</button>
+      <div class="spell-modal-level ${isCantrip ? 'cantrip' : ''}">
+        ${isCantrip ? '✦ Trucchetto' : '◆ Incantesimo di ' + spell._level + '° livello'}
+      </div>
+      <h3 class="spell-modal-name">${spell.name}</h3>
+      <div class="spell-modal-tags">
+        <span class="spell-modal-tag">${spell.school}</span>
+        ${spell.ritual ? '<span class="spell-modal-tag ritual">Rituale</span>' : ''}
+      </div>
+      <div class="spell-modal-grid">
+        <div><span class="smg-label">Tempo di lancio</span><span class="smg-val">${spell.castTime || '1 azione'}</span></div>
+        <div><span class="smg-label">Gittata</span><span class="smg-val">${spell.range || '—'}</span></div>
+        <div><span class="smg-label">Durata</span><span class="smg-val">${spell.duration || 'Istantanea'}</span></div>
+        <div><span class="smg-label">Componenti</span><span class="smg-val">${spell.components || 'V, S'}</span></div>
+      </div>
+      <div class="spell-modal-section-title">Come funziona / Tiri da fare</div>
+      <p class="spell-modal-desc">${spell.description}</p>
+      <div class="spell-modal-school-note">${DND.SPELL_SCHOOL_INFO[spell.school] || ''}</div>
+      <div class="spell-modal-classes">Classi: ${spell.classes.join(', ')}</div>
+      ${char ? `<button class="btn ${known ? 'btn-secondary' : 'btn-primary'}" id="spell-modal-add" style="width:100%;margin-top:1rem">
+        ${known ? '✓ Già nella tua lista — Rimuovi' : '+ Aggiungi ai tuoi incantesimi'}
+      </button>` : ''}
+    </div>
+  `;
+
+  modal.classList.add('open');
+  const close = () => modal.classList.remove('open');
+  modal.querySelector('#spell-modal-close').addEventListener('click', close);
+  modal.addEventListener('click', e => { if (e.target === modal) close(); });
+
+  const addBtn = modal.querySelector('#spell-modal-add');
+  if (addBtn && char) {
+    addBtn.addEventListener('click', () => {
+      if (known) {
+        char.spells.known = char.spells.known.filter(s => s !== spellName);
+        char.spells.prepared = char.spells.prepared.filter(s => s !== spellName);
+        showToast('Incantesimo rimosso');
+      } else {
+        char.spells.known.push(spellName);
+        char.spells.prepared.push(spellName);
+        showToast('Incantesimo aggiunto ✦');
+      }
+      close();
+      if (opts.onChange) opts.onChange();
+    });
+  }
+}
+
+// Popup di dettaglio arma — come si usa in combattimento (regole D&D)
+function showWeaponModal(attack) {
+  if (!attack) return;
+  const weapon = attack.weapon_ref ? Calc.findWeapon(attack.weapon_ref) : null;
+
+  let modal = document.getElementById('weapon-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'weapon-modal';
+    modal.className = 'spell-modal-overlay';
+    document.body.appendChild(modal);
+  }
+
+  let rulesHtml;
+  if (weapon) {
+    const rules = Calc.explainWeapon(weapon);
+    rulesHtml = `<ul class="rules-list">${rules.map(r => `<li>${r}</li>`).join('')}</ul>
+      <div class="rules-meta">Dado base dell'arma: <strong>${weapon.damage}</strong> ·
+      Proprietà: <strong>${(weapon.properties || []).join(', ') || 'Nessuna'}</strong></div>`;
+  } else {
+    rulesHtml = `<ul class="rules-list">
+      <li>TIRO PER COLPIRE: 1d20 + il bonus indicato, contro la CA del bersaglio.</li>
+      <li>DANNO se colpisci: tira i dadi indicati. Con un 20 naturale (critico) tiri i dadi del danno due volte.</li>
+    </ul>`;
+  }
+
+  modal.innerHTML = `
+    <div class="spell-modal-card">
+      <button class="spell-modal-close" id="weapon-modal-close">✕</button>
+      <div class="spell-modal-level">⚔ Arma</div>
+      <h3 class="spell-modal-name">${attack.name}</h3>
+      <div class="spell-modal-grid">
+        <div><span class="smg-label">Tiro per colpire</span><span class="smg-val">${attack.attack_bonus}</span></div>
+        <div><span class="smg-label">Danno</span><span class="smg-val">${attack.damage}</span></div>
+        <div><span class="smg-label">Tipo di danno</span><span class="smg-val">${attack.damage_type || '—'}</span></div>
+        <div><span class="smg-label">Categoria</span><span class="smg-val">${weapon ? (weapon._ranged ? 'A distanza' : 'Mischia') : 'Personalizzata'}</span></div>
+      </div>
+      <div class="spell-modal-section-title">Come si usa in combattimento</div>
+      ${rulesHtml}
+      ${attack.custom_notes ? `<div class="spell-modal-school-note">Note: ${attack.custom_notes}</div>` : ''}
+    </div>
+  `;
+
+  modal.classList.add('open');
+  const close = () => modal.classList.remove('open');
+  modal.querySelector('#weapon-modal-close').addEventListener('click', close);
+  modal.addEventListener('click', e => { if (e.target === modal) close(); });
+}
+
+// =============================================
+// CATCHPHRASES — frasi ad effetto del personaggio
+// =============================================
+
+const CATCHPHRASE_BANK = {
+  ability: {
+    str: ['La sua forza piega l\'acciaio e spezza le catene.', 'Dove passa, i nemici cadono come spighe al vento.'],
+    dex: ['Si muove come un\'ombra: rapido, silenzioso, inafferrabile.', 'Nessuna lama è più veloce dei suoi riflessi.'],
+    con: ['La sua tempra resiste là dove ogni altro crollerebbe.', 'Il dolore è solo un sussurro per chi non conosce resa.'],
+    int: ['La sua mente custodisce segreti che il mondo ha dimenticato.', 'Ogni enigma è risolto prima ancora di essere posto.'],
+    wis: ['Nulla sfugge al suo sguardo paziente.', 'Vede la verità dove gli altri vedono solo ombre.'],
+    cha: ['La sua voce incanta folle e piega sovrani.', 'Un sorriso, e il mondo intero si inchina.']
+  },
+  class: {
+    'Barbaro': 'Quando la furia lo travolge, nulla resta in piedi.',
+    'Bardo': 'La sua storia si canta in mille taverne.',
+    'Chierico': 'Cammina avvolto dalla luce della sua divinità.',
+    'Druido': 'La natura stessa risponde al suo richiamo.',
+    'Guerriero': 'Forgiato dalla guerra, temprato da mille battaglie.',
+    'Monaco': 'Corpo e spirito si muovono come una cosa sola.',
+    'Paladino': 'Il suo giuramento brilla più di qualunque lama.',
+    'Ranger': 'Conosce ogni sentiero, ogni preda, ogni pericolo.',
+    'Ladro': 'Colpisce dall\'ombra, prima ancora che tu lo veda.',
+    'Stregone': 'La magia scorre nel suo sangue come fuoco vivo.',
+    'Warlock': 'Ha barattato qualcosa di innominabile per un potere proibito.',
+    'Mago': 'Il sapere arcano è la sua arma più affilata.',
+    'Artificiere': 'Le sue invenzioni sfidano i confini del possibile.'
+  },
+  alignment: {
+    'Legale Buono': 'La giustizia è la sua bussola e lo scudo dei deboli.',
+    'Neutrale Buono': 'Fa il bene senza chiedere a chi o perché.',
+    'Caotico Buono': 'Spezza ogni regola pur di proteggere gli innocenti.',
+    'Legale Neutrale': 'L\'ordine, sopra ogni cosa.',
+    'Neutrale': 'Cammina in equilibrio fra tutte le forze del mondo.',
+    'Caotico Neutrale': 'Risponde soltanto alla propria libertà.',
+    'Legale Malvagio': 'La sua tirannia ha la fredda precisione di una legge.',
+    'Neutrale Malvagio': 'Ottiene ciò che vuole, senza rimorso né esitazione.',
+    'Caotico Malvagio': 'Lascia solo rovina e terrore sulla sua scia.'
+  },
+  level: [
+    { max: 4,  text: 'Le sue leggende devono ancora essere scritte.' },
+    { max: 10, text: 'Il suo nome inizia a farsi conoscere nelle terre.' },
+    { max: 16, text: 'Veterano di innumerevoli imprese e pericoli.' },
+    { max: 20, text: 'Una leggenda vivente, temuta e venerata.' }
+  ]
+};
+
+// Genera il pool di frasi ad effetto in base ai dati del personaggio
+function generateCatchphrases(character) {
+  const out = [];
+  const id = character.identity || {};
+  const ab = character.abilities || {};
+  const raceBonuses = Calc.getRacialBonuses(id.race, id.subrace);
+  const totals = {};
+  ['str', 'dex', 'con', 'int', 'wis', 'cha'].forEach(k => {
+    totals[k] = (ab[k] || 10) + (raceBonuses[k] || 0);
+  });
+  const sorted = Object.entries(totals).sort((a, b) => b[1] - a[1]);
+
+  // Caratteristica più alta (2 varianti) e seconda
+  const top = sorted[0][0], second = sorted[1][0];
+  if (CATCHPHRASE_BANK.ability[top]) out.push(...CATCHPHRASE_BANK.ability[top]);
+  if (CATCHPHRASE_BANK.ability[second]) out.push(CATCHPHRASE_BANK.ability[second][0]);
+
+  if (CATCHPHRASE_BANK.class[id.class]) out.push(CATCHPHRASE_BANK.class[id.class]);
+  if (CATCHPHRASE_BANK.alignment[id.alignment]) out.push(CATCHPHRASE_BANK.alignment[id.alignment]);
+
+  const tier = CATCHPHRASE_BANK.level.find(t => (id.level || 1) <= t.max);
+  if (tier) out.push(tier.text);
+
+  // Tocco finale basato su classe + razza
+  if (id.class && id.race) {
+    out.push(`${id.race} fino al midollo, ${id.class.toLowerCase()} per vocazione.`);
+  }
+
+  return out.filter(Boolean);
+}
+
+// Restituisce la frase da mostrare (fissata, oppure casuale dal pool attivo)
+function getActiveCatchphrase(character) {
+  const cp = character.catchphrase || { custom: [], disabled: [], pinned: null };
+  if (cp.pinned) return cp.pinned;
+  const auto = generateCatchphrases(character);
+  const pool = [...auto, ...(cp.custom || [])].filter(p => !(cp.disabled || []).includes(p));
+  if (!pool.length) return auto[0] || 'Un eroe la cui leggenda è ancora tutta da scrivere.';
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
 
 // =============================================
 // CREATE PAGE — COMPASS UI
@@ -6259,84 +6639,11 @@ function initCreatePage() {
 
   // ---- SPELLS ----
 
-  // Trova un incantesimo per nome e ne restituisce dati + livello
-  function findSpellData(name) {
-    for (const [key, list] of Object.entries(DND.SPELLS)) {
-      const spell = list.find(s => s.name === name);
-      if (spell) {
-        const level = key === 'cantrips' ? 0 : parseInt(key.replace('level', ''));
-        return { ...spell, _level: level };
-      }
-    }
-    return null;
-  }
-
-  function spellLevelLabel(lvl) {
-    return lvl === 0 ? 'Trucchetto' : `${lvl}° livello`;
-  }
-
-  // Popup di dettaglio incantesimo
+  // Wrapper: apre il dettaglio incantesimo collegato a questo personaggio
   function showSpellDetail(spellName) {
-    const spell = findSpellData(spellName);
-    if (!spell) { showToast('Dettagli non disponibili', 'error'); return; }
-
-    let modal = document.getElementById('spell-modal');
-    if (!modal) {
-      modal = document.createElement('div');
-      modal.id = 'spell-modal';
-      modal.className = 'spell-modal-overlay';
-      document.body.appendChild(modal);
-    }
-
-    const isCantrip = spell._level === 0;
-    const known = character.spells.known.includes(spellName);
-
-    modal.innerHTML = `
-      <div class="spell-modal-card">
-        <button class="spell-modal-close" id="spell-modal-close">✕</button>
-        <div class="spell-modal-level ${isCantrip ? 'cantrip' : ''}">
-          ${isCantrip ? '✦ Trucchetto' : '◆ Incantesimo di ' + spell._level + '° livello'}
-        </div>
-        <h3 class="spell-modal-name">${spell.name}</h3>
-        <div class="spell-modal-tags">
-          <span class="spell-modal-tag">${spell.school}</span>
-          ${spell.ritual ? '<span class="spell-modal-tag ritual">Rituale</span>' : ''}
-        </div>
-        <div class="spell-modal-grid">
-          <div><span class="smg-label">Tempo di lancio</span><span class="smg-val">${spell.castTime || '1 azione'}</span></div>
-          <div><span class="smg-label">Gittata</span><span class="smg-val">${spell.range || '—'}</span></div>
-          <div><span class="smg-label">Durata</span><span class="smg-val">${spell.duration || 'Istantanea'}</span></div>
-          <div><span class="smg-label">Componenti</span><span class="smg-val">${spell.components || 'V, S'}</span></div>
-        </div>
-        <div class="spell-modal-section-title">Come funziona</div>
-        <p class="spell-modal-desc">${spell.description}</p>
-        <div class="spell-modal-school-note">${DND.SPELL_SCHOOL_INFO[spell.school] || ''}</div>
-        <div class="spell-modal-classes">Classi: ${spell.classes.join(', ')}</div>
-        <button class="btn ${known ? 'btn-secondary' : 'btn-primary'}" id="spell-modal-add" style="width:100%;margin-top:1rem">
-          ${known ? '✓ Già nella tua lista — Rimuovi' : '+ Aggiungi ai tuoi incantesimi'}
-        </button>
-      </div>
-    `;
-
-    modal.classList.add('open');
-
-    const close = () => modal.classList.remove('open');
-    modal.querySelector('#spell-modal-close').addEventListener('click', close);
-    modal.addEventListener('click', e => { if (e.target === modal) close(); });
-
-    modal.querySelector('#spell-modal-add').addEventListener('click', () => {
-      if (known) {
-        character.spells.known = character.spells.known.filter(s => s !== spellName);
-        character.spells.prepared = character.spells.prepared.filter(s => s !== spellName);
-        showToast('Incantesimo rimosso');
-      } else {
-        character.spells.known.push(spellName);
-        character.spells.prepared.push(spellName);
-        showToast('Incantesimo aggiunto ✦');
-      }
-      close();
-      renderPreparedSpells();
-      autoSave();
+    showSpellModal(spellName, {
+      character: character,
+      onChange: () => { renderPreparedSpells(); autoSave(); }
     });
   }
 
@@ -6921,12 +7228,15 @@ function initViewPage() {
     });
   }
 
-  // Attacks
+  // Attacks — clickable rows showing weapon rules
   const attacksBody = document.getElementById('view-attacks-body');
   if (attacksBody) {
     character.combat.attacks.forEach(atk => {
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${atk.name}</td><td>${atk.attack_bonus}</td><td style="color:var(--red2)">${atk.damage}</td><td style="color:var(--text-dim);font-size:0.8rem">${atk.damage_type}</td>`;
+      tr.className = 'clickable-row';
+      tr.title = 'Tocca per le regole d\'uso in combattimento';
+      tr.innerHTML = `<td>${atk.name} <span class="row-info">ⓘ</span></td><td>${atk.attack_bonus}</td><td style="color:var(--red2)">${atk.damage}</td><td style="color:var(--text-dim);font-size:0.8rem">${atk.damage_type}</td>`;
+      tr.addEventListener('click', () => showWeaponModal(atk));
       attacksBody.appendChild(tr);
     });
     if (!character.combat.attacks.length) {
@@ -6963,20 +7273,25 @@ function initViewPage() {
 
       const spellsList = document.getElementById('view-spells-list');
       if (spellsList) {
-        const allSpells = Object.values(DND.SPELLS).flat();
-        character.spells.prepared.forEach(spellName => {
-          const spell = allSpells.find(s => s.name === spellName);
-          const el = document.createElement('div');
-          el.className = 'spell-entry prepared';
-          el.innerHTML = `
-            <div class="spell-prepared-dot"></div>
-            <span class="spell-entry-name">${spellName}</span>
-            ${spell ? `<span class="spell-entry-school">${spell.school}</span>` : ''}
-          `;
-          spellsList.appendChild(el);
-        });
         if (!character.spells.prepared.length) {
           spellsList.innerHTML = '<div class="section-hint">Nessun incantesimo preparato</div>';
+        } else {
+          spellsList.innerHTML = '<div class="section-hint">Tocca un incantesimo per vederne i dettagli e i tiri da fare.</div>';
+          const allSpells = Object.values(DND.SPELLS).flat();
+          character.spells.prepared.forEach(spellName => {
+            const spell = allSpells.find(s => s.name === spellName);
+            const el = document.createElement('div');
+            el.className = 'spell-entry prepared clickable-spell';
+            el.title = 'Tocca per i dettagli';
+            el.innerHTML = `
+              <div class="spell-prepared-dot"></div>
+              <span class="spell-entry-name">${spellName}</span>
+              ${spell ? `<span class="spell-entry-school">${spell.school}</span>` : ''}
+              <span class="spell-info-btn">ⓘ</span>
+            `;
+            el.addEventListener('click', () => showSpellModal(spellName));
+            spellsList.appendChild(el);
+          });
         }
       }
     } else {
@@ -7018,8 +7333,155 @@ function initViewPage() {
     langEl.textContent = character.languages?.join(', ') || 'Comune';
   }
 
+  // ---- Catchphrase (frase ad effetto luminosa) ----
+  if (!character.catchphrase) {
+    character.catchphrase = { custom: [], disabled: [], pinned: null };
+  }
+
+  function refreshCatchphrase() {
+    const el = document.getElementById('catchphrase-text');
+    if (el) el.textContent = getActiveCatchphrase(character);
+  }
+  refreshCatchphrase();
+
+  document.getElementById('catchphrase-edit')?.addEventListener('click', () => {
+    openCatchphraseModal(character, () => {
+      Storage.saveCharacter(character, user);
+      refreshCatchphrase();
+    });
+  });
+
   // Print
   document.getElementById('print-btn')?.addEventListener('click', () => window.print());
+}
+
+// =============================================
+// CATCHPHRASE MANAGEMENT MODAL
+// =============================================
+
+function openCatchphraseModal(character, onSave) {
+  const cp = character.catchphrase;
+
+  let modal = document.getElementById('catchphrase-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'catchphrase-modal';
+    modal.className = 'spell-modal-overlay';
+    document.body.appendChild(modal);
+  }
+
+  function save() { if (onSave) onSave(); }
+
+  function render() {
+    const auto = generateCatchphrases(character);
+    const custom = cp.custom || [];
+
+    const row = (text, isCustom, idx) => {
+      const disabled = (cp.disabled || []).includes(text);
+      const pinned = cp.pinned === text;
+      return `
+        <div class="cp-row ${pinned ? 'pinned' : ''} ${disabled ? 'disabled' : ''}">
+          <button class="cp-pin" data-text="${encodeURIComponent(text)}" title="${pinned ? 'Fissata' : 'Fissa questa frase'}">${pinned ? '📌' : '📍'}</button>
+          ${isCustom
+            ? `<input class="cp-edit-input" data-idx="${idx}" value="${text.replace(/"/g, '&quot;')}">`
+            : `<span class="cp-text">${text}</span>`}
+          <button class="cp-toggle" data-text="${encodeURIComponent(text)}" title="${disabled ? 'Nascosta — tocca per mostrare' : 'Visibile — tocca per nascondere'}">${disabled ? '🚫' : '👁'}</button>
+          ${isCustom ? `<button class="cp-del" data-idx="${idx}" title="Elimina">✕</button>` : ''}
+        </div>`;
+    };
+
+    modal.innerHTML = `
+      <div class="spell-modal-card">
+        <button class="spell-modal-close" id="cp-close">✕</button>
+        <div class="spell-modal-level">✦ Frasi ad Effetto</div>
+        <h3 class="spell-modal-name" style="font-size:1.2rem">Gestisci le frasi</h3>
+        <p class="section-hint" style="margin-top:0">
+          Scegli quali frasi mostrare. Se non ne fissi nessuna con 📌, ad ogni
+          apertura della scheda ne appare una a caso fra quelle visibili.
+        </p>
+
+        <div class="cp-group-title">Generate dalle caratteristiche</div>
+        <div id="cp-auto-list">${auto.map(t => row(t, false)).join('') || '<div class="section-hint">—</div>'}</div>
+
+        <div class="cp-group-title">Frasi personalizzate</div>
+        <div id="cp-custom-list">${custom.length ? custom.map((t, i) => row(t, true, i)).join('') : '<div class="section-hint">Nessuna frase personalizzata.</div>'}</div>
+
+        <div style="display:flex;gap:0.5rem;margin-top:0.7rem">
+          <input type="text" id="cp-new" placeholder="Scrivi una nuova frase ad effetto...">
+          <button class="btn btn-secondary btn-sm" id="cp-add">Aggiungi</button>
+        </div>
+
+        <button class="btn ${cp.pinned ? 'btn-secondary' : 'btn-primary'}" id="cp-random" style="width:100%;margin-top:1rem">
+          ${cp.pinned ? '🎲 Torna alla frase casuale' : '🎲 Modalità casuale attiva'}
+        </button>
+      </div>
+    `;
+
+    modal.classList.add('open');
+
+    const close = () => modal.classList.remove('open');
+    modal.querySelector('#cp-close').addEventListener('click', close);
+    modal.addEventListener('click', e => { if (e.target === modal) close(); });
+
+    // Pin
+    modal.querySelectorAll('.cp-pin').forEach(b => b.addEventListener('click', () => {
+      const text = decodeURIComponent(b.dataset.text);
+      cp.pinned = (cp.pinned === text) ? null : text;
+      save(); render();
+    }));
+
+    // Show / hide
+    modal.querySelectorAll('.cp-toggle').forEach(b => b.addEventListener('click', () => {
+      const text = decodeURIComponent(b.dataset.text);
+      cp.disabled = cp.disabled || [];
+      if (cp.disabled.includes(text)) cp.disabled = cp.disabled.filter(t => t !== text);
+      else cp.disabled.push(text);
+      save(); render();
+    }));
+
+    // Edit custom
+    modal.querySelectorAll('.cp-edit-input').forEach(inp => inp.addEventListener('change', () => {
+      const i = parseInt(inp.dataset.idx);
+      const old = cp.custom[i];
+      const val = inp.value.trim();
+      if (!val) return;
+      if (cp.pinned === old) cp.pinned = val;
+      cp.disabled = (cp.disabled || []).map(t => t === old ? val : t);
+      cp.custom[i] = val;
+      save();
+    }));
+
+    // Delete custom
+    modal.querySelectorAll('.cp-del').forEach(b => b.addEventListener('click', () => {
+      const i = parseInt(b.dataset.idx);
+      const removed = cp.custom[i];
+      if (cp.pinned === removed) cp.pinned = null;
+      cp.custom.splice(i, 1);
+      save(); render();
+    }));
+
+    // Add custom
+    const addCustom = () => {
+      const input = modal.querySelector('#cp-new');
+      const val = input.value.trim();
+      if (!val) return;
+      cp.custom = cp.custom || [];
+      cp.custom.push(val);
+      save(); render();
+    };
+    modal.querySelector('#cp-add').addEventListener('click', addCustom);
+    modal.querySelector('#cp-new').addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); addCustom(); }
+    });
+
+    // Random mode (unpin)
+    modal.querySelector('#cp-random').addEventListener('click', () => {
+      cp.pinned = null;
+      save(); render();
+    });
+  }
+
+  render();
 }
 
 // =============================================
