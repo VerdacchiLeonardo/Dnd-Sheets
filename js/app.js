@@ -175,6 +175,12 @@ function initIndexPage() {
       const chars = Storage.getCharacters(user);
       const countEl = document.getElementById('char-count');
       if (countEl) countEl.textContent = chars.length;
+      const badge = document.getElementById('welcome-type-badge');
+      if (badge) {
+        const type = Storage.getPlayerMeta(user).type;
+        badge.textContent = type === 'master' ? '🎭 Master' : '⚔️ Player';
+        badge.classList.toggle('master', type === 'master');
+      }
     }
   }
 
@@ -2231,6 +2237,102 @@ function initViewPage() {
 }
 
 // =============================================
+// PROFILE PAGE — Gestione Giocatore
+// =============================================
+
+function initProfilePage() {
+  initParticles('particles-canvas');
+
+  const user = Storage.getCurrentUser();
+  if (!user) { window.location.href = 'index.html'; return; }
+
+  const navUser = document.getElementById('nav-username');
+  if (navUser) navUser.textContent = user;
+
+  document.querySelectorAll('.btn-logout').forEach(b => b.addEventListener('click', () => {
+    Storage.logout(); window.location.href = 'index.html';
+  }));
+
+  function refresh() {
+    document.getElementById('profile-nickname').textContent = Storage.getCurrentUser();
+    document.getElementById('profile-charcount').textContent = Storage.getCharacters().length;
+    const type = Storage.getPlayerMeta().type;
+    document.querySelectorAll('.player-type-option').forEach(opt => {
+      opt.classList.toggle('selected', opt.dataset.type === type);
+    });
+  }
+  refresh();
+
+  // Tipo giocatore
+  document.querySelectorAll('.player-type-option').forEach(opt => {
+    opt.addEventListener('click', () => {
+      Storage.setPlayerMeta(null, { type: opt.dataset.type });
+      refresh();
+      showToast(opt.dataset.type === 'master' ? 'Sei un Master 🎭' : 'Sei un Player ⚔️');
+    });
+  });
+
+  // Rinomina
+  document.getElementById('profile-rename-btn')?.addEventListener('click', () => {
+    const cur = Storage.getCurrentUser();
+    const newName = prompt('Nuovo nickname:', cur);
+    if (newName === null) return;
+    const result = Storage.renameUser(cur, newName);
+    if (result === 'EXISTS') showToast('Esiste già un profilo con questo nome', 'error');
+    else if (result) { refresh(); showToast('Nickname aggiornato ✦'); }
+    else showToast('Nome non valido', 'error');
+  });
+
+  // Esporta
+  document.getElementById('export-btn')?.addEventListener('click', () => {
+    const data = Storage.exportData();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const stamp = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `dnd-sheets_${Storage.getCurrentUser()}_${stamp}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    showToast(`Backup esportato: ${data.characters.length} personaggi ✦`);
+  });
+
+  // Importa
+  const importInput = document.getElementById('import-input');
+  document.getElementById('import-btn')?.addEventListener('click', () => importInput?.click());
+  importInput?.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      let data;
+      try { data = JSON.parse(ev.target.result); }
+      catch { showToast('File non leggibile', 'error'); return; }
+      const result = Storage.importData(data);
+      if (!result.ok) { showToast(result.error, 'error'); return; }
+      refresh();
+      showToast(`Importati: ${result.added} nuovi, ${result.updated} aggiornati ✦`);
+    };
+    reader.readAsText(file);
+    importInput.value = '';
+  });
+
+  // Elimina profilo
+  document.getElementById('delete-profile-btn')?.addEventListener('click', () => {
+    const cur = Storage.getCurrentUser();
+    const count = Storage.getCharacters(cur).length;
+    const msg = count > 0
+      ? `Eliminare il profilo "${cur}" e i suoi ${count} personaggi? Esporta un backup prima — l'azione è irreversibile.`
+      : `Eliminare il profilo "${cur}"?`;
+    if (!confirm(msg)) return;
+    Storage.deleteUser(cur);
+    window.location.href = 'index.html';
+  });
+}
+
+// =============================================
 // AUTO-DETECT PAGE & INIT
 // =============================================
 
@@ -2246,4 +2348,5 @@ document.addEventListener('DOMContentLoaded', () => {
   else if (page === 'chars') initCharsPage();
   else if (page === 'create') initCreatePage();
   else if (page === 'view')  initViewPage();
+  else if (page === 'profile') initProfilePage();
 });

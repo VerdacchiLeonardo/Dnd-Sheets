@@ -2401,6 +2401,140 @@ input:focus, textarea:focus, select:focus {
   background: rgba(139, 26, 26, 0.15);
 }
 
+/* =============================================
+   PROFILE PAGE — Gestione Giocatore
+   ============================================= */
+.profile-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.profile-row:last-of-type { border-bottom: none; }
+
+.profile-row-label {
+  font-family: var(--font-h);
+  font-size: 0.68rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.profile-row-value {
+  font-family: var(--font-h);
+  font-size: 1.15rem;
+  color: var(--white);
+  margin-top: 0.15rem;
+}
+
+/* Player type selector */
+.player-type-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem;
+  margin-top: 0.6rem;
+}
+.player-type-option {
+  background: rgba(13, 16, 30, 0.7);
+  border: 1px solid var(--border);
+  border-radius: var(--r2);
+  padding: 1.1rem 0.8rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+.player-type-option:hover { border-color: var(--gold-dim); transform: translateY(-2px); }
+.player-type-option.selected {
+  border-color: var(--gold);
+  background: linear-gradient(135deg, rgba(201,168,76,0.14), rgba(70,110,180,0.08));
+  box-shadow: 0 0 22px rgba(201,168,76,0.14);
+}
+.player-type-icon { font-size: 2rem; margin-bottom: 0.4rem; }
+.player-type-name {
+  font-family: var(--font-h);
+  font-size: 1rem;
+  color: var(--text);
+  letter-spacing: 0.06em;
+}
+.player-type-option.selected .player-type-name { color: var(--gold); }
+.player-type-desc {
+  font-size: 0.76rem;
+  color: var(--text-dim);
+  margin-top: 0.3rem;
+  line-height: 1.4;
+}
+
+/* Backup steps */
+.backup-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 0.9rem;
+}
+.backup-step {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  font-size: 0.85rem;
+  color: var(--text2);
+  line-height: 1.45;
+}
+.backup-step-num {
+  flex-shrink: 0;
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: rgba(201,168,76,0.12);
+  border: 1px solid var(--gold-dim);
+  color: var(--gold);
+  font-family: var(--font-h);
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+code {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 0.85em;
+  color: var(--gold2);
+}
+
+/* Player type badge */
+.type-badge {
+  display: inline-block;
+  font-family: var(--font-h);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  color: var(--text2);
+  background: rgba(13, 16, 30, 0.7);
+  border: 1px solid var(--border2);
+  border-radius: 50px;
+  padding: 0.25rem 0.8rem;
+}
+.type-badge.master {
+  color: var(--gold);
+  border-color: var(--gold-dim);
+  background: rgba(201, 168, 76, 0.1);
+}
+
+/* Navbar gear link — neutral/gold hover instead of red */
+.navbar-user a.btn-logout {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+.navbar-user a.btn-logout:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+@media (max-width: 480px) {
+  .player-type-grid { grid-template-columns: 1fr; }
+}
+
   </style>
 </head>
 <body>
@@ -3461,6 +3595,7 @@ const Storage = {
   KEYS: {
     currentUser: 'dnd_current_user',
     users: 'dnd_users',
+    playerMeta: 'dnd_player_meta',
     characters: (user) => `dnd_characters_${user}`
   },
 
@@ -3505,6 +3640,9 @@ const Storage = {
     const chars = this.getCharacters(oldName);
     localStorage.setItem(this.KEYS.characters(clean), JSON.stringify(chars));
     localStorage.removeItem(this.KEYS.characters(oldName));
+    // Sposta i metadati del giocatore
+    const meta = this._allMeta();
+    if (meta[oldName]) { meta[clean] = meta[oldName]; delete meta[oldName]; this._saveMeta(meta); }
     // Aggiorna la lista utenti
     const updated = users.filter(u => u !== oldName);
     updated.push(clean);
@@ -3521,8 +3659,73 @@ const Storage = {
     localStorage.removeItem(this.KEYS.characters(name));
     const users = this.getUsers().filter(u => u !== name);
     localStorage.setItem(this.KEYS.users, JSON.stringify(users));
+    const meta = this._allMeta();
+    delete meta[name];
+    this._saveMeta(meta);
     if (this.getCurrentUser() === name) this.logout();
     return true;
+  },
+
+  // ---- PLAYER METADATA (tipo giocatore, ecc.) ----
+  _allMeta() {
+    try { return JSON.parse(localStorage.getItem(this.KEYS.playerMeta) || '{}'); }
+    catch { return {}; }
+  },
+
+  _saveMeta(meta) {
+    localStorage.setItem(this.KEYS.playerMeta, JSON.stringify(meta));
+  },
+
+  getPlayerMeta(user) {
+    const u = user || this.getCurrentUser();
+    if (!u) return { type: 'player' };
+    const meta = this._allMeta()[u] || {};
+    return { type: meta.type || 'player' };
+  },
+
+  setPlayerMeta(user, partial) {
+    const u = user || this.getCurrentUser();
+    if (!u) return false;
+    const all = this._allMeta();
+    all[u] = { ...(all[u] || {}), ...partial };
+    this._saveMeta(all);
+    return true;
+  },
+
+  // ---- EXPORT / IMPORT (backup tra dispositivi) ----
+  exportData(user) {
+    const u = user || this.getCurrentUser();
+    return {
+      app: 'dnd-sheets',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      player: u,
+      playerType: this.getPlayerMeta(u).type,
+      characters: this.getCharacters(u)
+    };
+  },
+
+  importData(data, user) {
+    const u = user || this.getCurrentUser();
+    if (!u) return { ok: false, error: 'Nessun giocatore attivo' };
+    if (!data || data.app !== 'dnd-sheets' || !Array.isArray(data.characters)) {
+      return { ok: false, error: 'File non valido o non riconosciuto' };
+    }
+    // Unisce per id: aggiorna gli esistenti, aggiunge i nuovi
+    const existing = this.getCharacters(u);
+    const byId = {};
+    existing.forEach(c => { byId[c.id] = c; });
+    let added = 0, updated = 0;
+    data.characters.forEach(c => {
+      if (!c || typeof c !== 'object') return;
+      if (!c.id) c.id = this.generateId();
+      if (byId[c.id]) updated++; else added++;
+      byId[c.id] = c;
+    });
+    localStorage.setItem(this.KEYS.characters(u), JSON.stringify(Object.values(byId)));
+    // Importa anche il tipo giocatore se presente
+    if (data.playerType) this.setPlayerMeta(u, { type: data.playerType });
+    return { ok: true, added, updated };
   },
 
   getCharacters(user) {
@@ -3993,7 +4196,10 @@ const Calc = {
         <div style="text-align:center;margin-bottom:1.5rem">
           <div style="font-size:2.5rem;margin-bottom:0.5rem;animation:floatY 3s ease-in-out infinite">⚔</div>
           <h2>Ben tornato, <span id="welcome-name" class="shimmer"></span></h2>
-          <p style="font-size:0.85rem;color:var(--text-dim);margin-top:0.5rem">
+          <div style="margin-top:0.5rem">
+            <span id="welcome-type-badge" class="type-badge">⚔️ Player</span>
+          </div>
+          <p style="font-size:0.85rem;color:var(--text-dim);margin-top:0.6rem">
             Hai <strong id="char-count" style="color:var(--gold)">0</strong> personaggi salvati
           </p>
         </div>
@@ -4005,12 +4211,13 @@ const Calc = {
           <a href="#create" class="btn btn-secondary">
             <span>✦</span> Crea Nuovo Personaggio
           </a>
+          <a href="#profile" class="btn btn-secondary">
+            <span>⚙</span> Gestione Giocatore
+          </a>
         </div>
 
         <div class="profile-actions">
           <button class="btn-logout">⇄ Cambia Giocatore</button>
-          <button class="btn-logout" id="rename-player-btn">✎ Rinomina</button>
-          <button class="btn-logout btn-logout-danger" id="delete-player-btn">🗑 Elimina Profilo</button>
         </div>
       </div>
 
@@ -4033,6 +4240,7 @@ const Calc = {
     <a href="#index" class="navbar-brand">⚔ D&amp;D Sheets</a>
     <div class="navbar-user">
       <span class="navbar-username" id="nav-username"></span>
+      <a href="#profile" class="btn-logout" title="Gestione Giocatore">⚙</a>
       <button class="btn-logout">Esci</button>
     </div>
   </nav>
@@ -4337,6 +4545,112 @@ const Calc = {
       </div>
 
     </div>
+  </div>`,
+    profile: `<canvas id="particles-canvas"></canvas>
+<div id="toast-container" class="toast-container"></div>
+<canvas id="particles-canvas"></canvas>
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <a href="#chars" class="navbar-brand">← D&amp;D Sheets</a>
+    <div class="navbar-user">
+      <span class="navbar-username" id="nav-username"></span>
+      <button class="btn-logout">Esci</button>
+    </div>
+  </nav>
+
+  <div class="page-wrap" style="padding-top: 72px">
+    <div class="container" style="padding-top: 2rem; padding-bottom: 3rem; max-width: 720px">
+
+      <div style="text-align:center;margin-bottom:2rem">
+        <h2 class="shimmer">Gestione Giocatore</h2>
+        <p class="subtitle" style="margin-top:0.3rem">Il tuo profilo e i tuoi dati</p>
+      </div>
+
+      <!-- PROFILO -->
+      <div class="card card-gold" style="margin-bottom:1.5rem">
+        <div class="view-section-title" style="color:var(--gold)">⚜ Profilo</div>
+
+        <div class="profile-row">
+          <div>
+            <div class="profile-row-label">Nickname</div>
+            <div class="profile-row-value" id="profile-nickname">—</div>
+          </div>
+          <button class="btn btn-secondary btn-sm" id="profile-rename-btn">✎ Rinomina</button>
+        </div>
+
+        <div class="profile-row">
+          <div>
+            <div class="profile-row-label">Personaggi creati</div>
+            <div class="profile-row-value" id="profile-charcount">0</div>
+          </div>
+          <a href="#chars" class="btn btn-secondary btn-sm">Vedi tutti</a>
+        </div>
+
+        <div class="deco-divider">Tipo di Giocatore</div>
+        <p class="section-hint" style="margin-top:0">Scegli il tuo ruolo al tavolo. È un'etichetta personale per organizzarti.</p>
+        <div class="player-type-grid">
+          <div class="player-type-option" data-type="player">
+            <div class="player-type-icon">⚔️</div>
+            <div class="player-type-name">Player</div>
+            <div class="player-type-desc">Interpreti un personaggio nell'avventura</div>
+          </div>
+          <div class="player-type-option" data-type="master">
+            <div class="player-type-icon">🎭</div>
+            <div class="player-type-name">Master (DM)</div>
+            <div class="player-type-desc">Guidi la storia e gestisci il mondo</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BACKUP & SINCRONIZZAZIONE -->
+      <div class="card" style="margin-bottom:1.5rem">
+        <div class="view-section-title" style="color:var(--gold)">☁ Backup & Sincronizzazione</div>
+        <p class="section-hint" style="margin-top:0">
+          I personaggi sono salvati su <strong>questo dispositivo</strong>. Per averli anche su un altro
+          (es. dal telefono al PC), <strong>esporta</strong> un file di backup da un dispositivo e
+          <strong>importalo</strong> sull'altro.
+        </p>
+
+        <div class="backup-steps">
+          <div class="backup-step">
+            <span class="backup-step-num">1</span>
+            <span>Sul dispositivo con i dati, premi <strong>Esporta</strong> — ottieni un file <code>.json</code></span>
+          </div>
+          <div class="backup-step">
+            <span class="backup-step-num">2</span>
+            <span>Sposta il file sull'altro dispositivo (AirDrop, email, iCloud, Google Drive...)</span>
+          </div>
+          <div class="backup-step">
+            <span class="backup-step-num">3</span>
+            <span>Sull'altro dispositivo premi <strong>Importa</strong> e scegli il file</span>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:0.7rem;flex-wrap:wrap;margin-top:1rem">
+          <button class="btn btn-primary" id="export-btn">⬇ Esporta i miei dati</button>
+          <button class="btn btn-secondary" id="import-btn">⬆ Importa da file</button>
+          <input type="file" id="import-input" accept="application/json,.json" style="display:none">
+        </div>
+        <div class="section-hint" style="margin-top:0.6rem">
+          L'importazione <strong>unisce</strong> i personaggi: aggiunge quelli nuovi e aggiorna quelli già presenti, senza cancellare nulla.
+        </div>
+      </div>
+
+      <!-- ZONA PERICOLOSA -->
+      <div class="card rune-border" style="border-color:rgba(196,43,43,0.3)">
+        <div class="view-section-title" style="color:var(--red2);border-bottom-color:rgba(196,43,43,0.2)">⚠ Zona Pericolosa</div>
+        <div class="profile-row" style="border:none">
+          <div>
+            <div class="profile-row-label">Elimina profilo</div>
+            <div class="section-hint" style="margin-top:0.2rem">Rimuove il profilo e tutti i suoi personaggi da questo dispositivo. Esporta un backup prima!</div>
+          </div>
+          <button class="btn btn-danger btn-sm" id="delete-profile-btn">🗑 Elimina</button>
+        </div>
+      </div>
+
+    </div>
   </div>`
   };
 
@@ -4373,6 +4687,7 @@ const Calc = {
     else if (page === 'chars') initCharsPage();
     else if (page === 'create') initCreatePage();
     else if (page === 'view') initViewPage();
+    else if (page === 'profile') initProfilePage();
   }
 
   window.addEventListener('hashchange', renderPage);
@@ -4391,7 +4706,8 @@ const _navMap = {
   'index.html': 'index',
   'characters.html': 'chars',
   'create.html': 'create',
-  'view.html': 'view'
+  'view.html': 'view',
+  'profile.html': 'profile'
 };
 
 // Override all href navigations
@@ -4575,6 +4891,12 @@ function initIndexPage() {
       const chars = Storage.getCharacters(user);
       const countEl = document.getElementById('char-count');
       if (countEl) countEl.textContent = chars.length;
+      const badge = document.getElementById('welcome-type-badge');
+      if (badge) {
+        const type = Storage.getPlayerMeta(user).type;
+        badge.textContent = type === 'master' ? '🎭 Master' : '⚔️ Player';
+        badge.classList.toggle('master', type === 'master');
+      }
     }
   }
 
@@ -6631,6 +6953,102 @@ function initViewPage() {
 }
 
 // =============================================
+// PROFILE PAGE — Gestione Giocatore
+// =============================================
+
+function initProfilePage() {
+  initParticles('particles-canvas');
+
+  const user = Storage.getCurrentUser();
+  if (!user) { location.hash='index'; return; }
+
+  const navUser = document.getElementById('nav-username');
+  if (navUser) navUser.textContent = user;
+
+  document.querySelectorAll('.btn-logout').forEach(b => b.addEventListener('click', () => {
+    Storage.logout(); location.hash='index';
+  }));
+
+  function refresh() {
+    document.getElementById('profile-nickname').textContent = Storage.getCurrentUser();
+    document.getElementById('profile-charcount').textContent = Storage.getCharacters().length;
+    const type = Storage.getPlayerMeta().type;
+    document.querySelectorAll('.player-type-option').forEach(opt => {
+      opt.classList.toggle('selected', opt.dataset.type === type);
+    });
+  }
+  refresh();
+
+  // Tipo giocatore
+  document.querySelectorAll('.player-type-option').forEach(opt => {
+    opt.addEventListener('click', () => {
+      Storage.setPlayerMeta(null, { type: opt.dataset.type });
+      refresh();
+      showToast(opt.dataset.type === 'master' ? 'Sei un Master 🎭' : 'Sei un Player ⚔️');
+    });
+  });
+
+  // Rinomina
+  document.getElementById('profile-rename-btn')?.addEventListener('click', () => {
+    const cur = Storage.getCurrentUser();
+    const newName = prompt('Nuovo nickname:', cur);
+    if (newName === null) return;
+    const result = Storage.renameUser(cur, newName);
+    if (result === 'EXISTS') showToast('Esiste già un profilo con questo nome', 'error');
+    else if (result) { refresh(); showToast('Nickname aggiornato ✦'); }
+    else showToast('Nome non valido', 'error');
+  });
+
+  // Esporta
+  document.getElementById('export-btn')?.addEventListener('click', () => {
+    const data = Storage.exportData();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const stamp = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `dnd-sheets_${Storage.getCurrentUser()}_${stamp}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    showToast(`Backup esportato: ${data.characters.length} personaggi ✦`);
+  });
+
+  // Importa
+  const importInput = document.getElementById('import-input');
+  document.getElementById('import-btn')?.addEventListener('click', () => importInput?.click());
+  importInput?.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      let data;
+      try { data = JSON.parse(ev.target.result); }
+      catch { showToast('File non leggibile', 'error'); return; }
+      const result = Storage.importData(data);
+      if (!result.ok) { showToast(result.error, 'error'); return; }
+      refresh();
+      showToast(`Importati: ${result.added} nuovi, ${result.updated} aggiornati ✦`);
+    };
+    reader.readAsText(file);
+    importInput.value = '';
+  });
+
+  // Elimina profilo
+  document.getElementById('delete-profile-btn')?.addEventListener('click', () => {
+    const cur = Storage.getCurrentUser();
+    const count = Storage.getCharacters(cur).length;
+    const msg = count > 0
+      ? `Eliminare il profilo "${cur}" e i suoi ${count} personaggi? Esporta un backup prima — l'azione è irreversibile.`
+      : `Eliminare il profilo "${cur}"?`;
+    if (!confirm(msg)) return;
+    Storage.deleteUser(cur);
+    location.hash='index';
+  });
+}
+
+// =============================================
 // AUTO-DETECT PAGE & INIT
 // =============================================
 
@@ -6646,6 +7064,7 @@ document.addEventListener('DOMContentLoaded', () => {
   else if (page === 'chars') initCharsPage();
   else if (page === 'create') initCreatePage();
   else if (page === 'view')  initViewPage();
+  else if (page === 'profile') initProfilePage();
 });
 
 </script>

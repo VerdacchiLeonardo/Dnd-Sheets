@@ -60,7 +60,10 @@
         <div style="text-align:center;margin-bottom:1.5rem">
           <div style="font-size:2.5rem;margin-bottom:0.5rem;animation:floatY 3s ease-in-out infinite">⚔</div>
           <h2>Ben tornato, <span id="welcome-name" class="shimmer"></span></h2>
-          <p style="font-size:0.85rem;color:var(--text-dim);margin-top:0.5rem">
+          <div style="margin-top:0.5rem">
+            <span id="welcome-type-badge" class="type-badge">⚔️ Player</span>
+          </div>
+          <p style="font-size:0.85rem;color:var(--text-dim);margin-top:0.6rem">
             Hai <strong id="char-count" style="color:var(--gold)">0</strong> personaggi salvati
           </p>
         </div>
@@ -72,12 +75,13 @@
           <a href="create.html" class="btn btn-secondary">
             <span>✦</span> Crea Nuovo Personaggio
           </a>
+          <a href="profile.html" class="btn btn-secondary">
+            <span>⚙</span> Gestione Giocatore
+          </a>
         </div>
 
         <div class="profile-actions">
           <button class="btn-logout">⇄ Cambia Giocatore</button>
-          <button class="btn-logout" id="rename-player-btn">✎ Rinomina</button>
-          <button class="btn-logout btn-logout-danger" id="delete-player-btn">🗑 Elimina Profilo</button>
         </div>
       </div>
 

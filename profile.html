@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="theme-color" content="#080810">
+  <title>Gestione Giocatore — D&D Sheets</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="profile">
+  <canvas id="particles-canvas"></canvas>
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <a href="characters.html" class="navbar-brand">← D&amp;D Sheets</a>
+    <div class="navbar-user">
+      <span class="navbar-username" id="nav-username"></span>
+      <button class="btn-logout">Esci</button>
+    </div>
+  </nav>
+
+  <div class="page-wrap" style="padding-top: 72px">
+    <div class="container" style="padding-top: 2rem; padding-bottom: 3rem; max-width: 720px">
+
+      <div style="text-align:center;margin-bottom:2rem">
+        <h2 class="shimmer">Gestione Giocatore</h2>
+        <p class="subtitle" style="margin-top:0.3rem">Il tuo profilo e i tuoi dati</p>
+      </div>
+
+      <!-- PROFILO -->
+      <div class="card card-gold" style="margin-bottom:1.5rem">
+        <div class="view-section-title" style="color:var(--gold)">⚜ Profilo</div>
+
+        <div class="profile-row">
+          <div>
+            <div class="profile-row-label">Nickname</div>
+            <div class="profile-row-value" id="profile-nickname">—</div>
+          </div>
+          <button class="btn btn-secondary btn-sm" id="profile-rename-btn">✎ Rinomina</button>
+        </div>
+
+        <div class="profile-row">
+          <div>
+            <div class="profile-row-label">Personaggi creati</div>
+            <div class="profile-row-value" id="profile-charcount">0</div>
+          </div>
+          <a href="characters.html" class="btn btn-secondary btn-sm">Vedi tutti</a>
+        </div>
+
+        <div class="deco-divider">Tipo di Giocatore</div>
+        <p class="section-hint" style="margin-top:0">Scegli il tuo ruolo al tavolo. È un'etichetta personale per organizzarti.</p>
+        <div class="player-type-grid">
+          <div class="player-type-option" data-type="player">
+            <div class="player-type-icon">⚔️</div>
+            <div class="player-type-name">Player</div>
+            <div class="player-type-desc">Interpreti un personaggio nell'avventura</div>
+          </div>
+          <div class="player-type-option" data-type="master">
+            <div class="player-type-icon">🎭</div>
+            <div class="player-type-name">Master (DM)</div>
+            <div class="player-type-desc">Guidi la storia e gestisci il mondo</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BACKUP & SINCRONIZZAZIONE -->
+      <div class="card" style="margin-bottom:1.5rem">
+        <div class="view-section-title" style="color:var(--gold)">☁ Backup & Sincronizzazione</div>
+        <p class="section-hint" style="margin-top:0">
+          I personaggi sono salvati su <strong>questo dispositivo</strong>. Per averli anche su un altro
+          (es. dal telefono al PC), <strong>esporta</strong> un file di backup da un dispositivo e
+          <strong>importalo</strong> sull'altro.
+        </p>
+
+        <div class="backup-steps">
+          <div class="backup-step">
+            <span class="backup-step-num">1</span>
+            <span>Sul dispositivo con i dati, premi <strong>Esporta</strong> — ottieni un file <code>.json</code></span>
+          </div>
+          <div class="backup-step">
+            <span class="backup-step-num">2</span>
+            <span>Sposta il file sull'altro dispositivo (AirDrop, email, iCloud, Google Drive...)</span>
+          </div>
+          <div class="backup-step">
+            <span class="backup-step-num">3</span>
+            <span>Sull'altro dispositivo premi <strong>Importa</strong> e scegli il file</span>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:0.7rem;flex-wrap:wrap;margin-top:1rem">
+          <button class="btn btn-primary" id="export-btn">⬇ Esporta i miei dati</button>
+          <button class="btn btn-secondary" id="import-btn">⬆ Importa da file</button>
+          <input type="file" id="import-input" accept="application/json,.json" style="display:none">
+        </div>
+        <div class="section-hint" style="margin-top:0.6rem">
+          L'importazione <strong>unisce</strong> i personaggi: aggiunge quelli nuovi e aggiorna quelli già presenti, senza cancellare nulla.
+        </div>
+      </div>
+
+      <!-- ZONA PERICOLOSA -->
+      <div class="card rune-border" style="border-color:rgba(196,43,43,0.3)">
+        <div class="view-section-title" style="color:var(--red2);border-bottom-color:rgba(196,43,43,0.2)">⚠ Zona Pericolosa</div>
+        <div class="profile-row" style="border:none">
+          <div>
+            <div class="profile-row-label">Elimina profilo</div>
+            <div class="section-hint" style="margin-top:0.2rem">Rimuove il profilo e tutti i suoi personaggi da questo dispositivo. Esporta un backup prima!</div>
+          </div>
+          <button class="btn btn-danger btn-sm" id="delete-profile-btn">🗑 Elimina</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/calc.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

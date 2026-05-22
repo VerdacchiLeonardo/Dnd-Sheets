@@ -9,7 +9,7 @@ with open('js/app.js', 'r') as f: app_js = f.read()
 
 # Also read each page HTML and extract body content
 pages = {}
-for page in ['index','characters','create','view']:
+for page in ['index','characters','create','view','profile']:
     with open(f'{page}.html', 'r') as f:
         pages[page] = f.read()
 
@@ -46,7 +46,8 @@ bundle = f"""<!DOCTYPE html>
     index: `__INDEX_BODY__`,
     chars: `__CHARS_BODY__`,
     create: `__CREATE_BODY__`,
-    view: `__VIEW_BODY__`
+    view: `__VIEW_BODY__`,
+    profile: `__PROFILE_BODY__`
   }};
 
   function getPage() {{
@@ -82,6 +83,7 @@ bundle = f"""<!DOCTYPE html>
     else if (page === 'chars') initCharsPage();
     else if (page === 'create') initCreatePage();
     else if (page === 'view') initViewPage();
+    else if (page === 'profile') initProfilePage();
   }}
 
   window.addEventListener('hashchange', renderPage);
@@ -100,7 +102,8 @@ const _navMap = {{
   'index.html': 'index',
   'characters.html': 'chars',
   'create.html': 'create',
-  'view.html': 'view'
+  'view.html': 'view',
+  'profile.html': 'profile'
 }};
 
 // Override all href navigations
@@ -147,10 +150,11 @@ _navMap = {
     'index.html': 'index',
     'characters.html': 'chars',
     'create.html': 'create',
-    'view.html': 'view'
+    'view.html': 'view',
+    'profile.html': 'profile'
 }
 
-for page in ['index','chars','create','view']:
+for page in ['index','chars','create','view','profile']:
     html_page = 'index' if page == 'index' else ('characters' if page == 'chars' else page)
     content = extract_body(pages[html_page])
     content = fix_hrefs(content)
