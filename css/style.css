@@ -2523,3 +2523,16 @@ code {
 @media (max-width: 480px) {
   .player-type-grid { grid-template-columns: 1fr; }
 }
+
+/* User chip — character count badge */
+.user-chip-count {
+  margin-left: auto;
+  font-size: 0.66rem;
+  font-family: var(--font-h);
+  letter-spacing: 0.04em;
+  background: rgba(201,168,76,0.12);
+  border: 1px solid var(--gold-dim);
+  color: var(--gold);
+  border-radius: 50px;
+  padding: 1px 8px;
+}

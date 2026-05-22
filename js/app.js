@@ -194,12 +194,14 @@ function initIndexPage() {
     }
     ul.innerHTML = '';
     users.forEach(u => {
+      const count = Storage.getCharacters(u).length;
       const chip = document.createElement('div');
       chip.className = 'user-chip';
-      chip.innerHTML = `<span class="user-chip-icon">⚔</span> ${u}`;
+      chip.innerHTML = `<span class="user-chip-icon">⚔</span> <span>${u}</span>` +
+        `<span class="user-chip-count">${count} pg</span>`;
       chip.addEventListener('click', () => {
-        Storage.setCurrentUser(u);
-        showWelcome(u);
+        const cleaned = Storage.setCurrentUser(u);
+        showWelcome(cleaned || u);
       });
       ul.appendChild(chip);
     });
@@ -268,7 +270,7 @@ function initCharsPage() {
 
   renderChars();
 
-  document.querySelectorAll('.btn-logout').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('button.btn-logout').forEach(b => b.addEventListener('click', () => {
     Storage.logout();
     window.location.href = 'index.html';
   }));
@@ -371,7 +373,7 @@ function initCreatePage() {
   const usernameEl = document.getElementById('nav-username');
   if (usernameEl) usernameEl.textContent = user;
 
-  document.querySelectorAll('.btn-logout').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('button.btn-logout').forEach(b => b.addEventListener('click', () => {
     Storage.logout(); window.location.href = 'index.html';
   }));
 
@@ -2040,7 +2042,7 @@ function initViewPage() {
   applyClassTheme(theme);
   initParticles('particles-canvas', theme);
 
-  document.querySelectorAll('.btn-logout').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('button.btn-logout').forEach(b => b.addEventListener('click', () => {
     Storage.logout(); window.location.href = 'index.html';
   }));
 
@@ -2249,7 +2251,7 @@ function initProfilePage() {
   const navUser = document.getElementById('nav-username');
   if (navUser) navUser.textContent = user;
 
-  document.querySelectorAll('.btn-logout').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('button.btn-logout').forEach(b => b.addEventListener('click', () => {
     Storage.logout(); window.location.href = 'index.html';
   }));
 
@@ -2337,6 +2339,9 @@ function initProfilePage() {
 // =============================================
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Ripara eventuali profili incoerenti prima di tutto
+  try { Storage.migrate(); } catch (e) { console.error('migrate', e); }
+
   const body = document.body;
   const page = body.dataset.page;
 

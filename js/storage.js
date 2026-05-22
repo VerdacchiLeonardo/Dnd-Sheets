@@ -13,8 +13,7 @@ const Storage = {
   },
 
   setCurrentUser(username) {
-    if (!username) return false;
-    const clean = username.trim().toLowerCase().replace(/[^a-z0-9_\-àèìòù]/gi, '');
+    const clean = this.cleanUsername(username);
     if (!clean) return false;
     localStorage.setItem(this.KEYS.currentUser, clean);
     const users = this.getUsers();
@@ -31,12 +30,61 @@ const Storage = {
     } catch { return []; }
   },
 
+  // Ripara stati incoerenti (chiavi utente con spazi create da una vecchia
+  // versione di renameUser). Unisce i personaggi sotto la chiave pulita.
+  // Idempotente: se non c'è nulla da riparare non scrive niente.
+  migrate() {
+    const rawUsers = this.getUsers();
+    const cur = localStorage.getItem(this.KEYS.currentUser);
+    const all = new Set(rawUsers);
+    if (cur) all.add(cur);
+
+    let touched = false;
+    all.forEach(oldName => {
+      const newName = this.cleanUsername(oldName);
+      if (!newName || newName === oldName) return;
+      touched = true;
+      // Unisce i personaggi oldName -> newName (per id, senza perdite)
+      const byId = {};
+      this.getCharacters(newName).forEach(c => { if (c && c.id) byId[c.id] = c; });
+      this.getCharacters(oldName).forEach(c => {
+        if (!c) return;
+        if (!c.id) c.id = this.generateId();
+        byId[c.id] = c;
+      });
+      localStorage.setItem(this.KEYS.characters(newName), JSON.stringify(Object.values(byId)));
+      localStorage.removeItem(this.KEYS.characters(oldName));
+      // Metadati
+      const meta = this._allMeta();
+      if (meta[oldName]) {
+        if (!meta[newName]) meta[newName] = meta[oldName];
+        delete meta[oldName];
+        this._saveMeta(meta);
+      }
+      // Utente corrente
+      if (localStorage.getItem(this.KEYS.currentUser) === oldName) {
+        localStorage.setItem(this.KEYS.currentUser, newName);
+      }
+    });
+
+    if (touched) {
+      const cleaned = [];
+      rawUsers.forEach(u => {
+        const n = this.cleanUsername(u) || u;
+        if (n && !cleaned.includes(n)) cleaned.push(n);
+      });
+      const c = localStorage.getItem(this.KEYS.currentUser);
+      if (c && !cleaned.includes(c)) cleaned.push(c);
+      localStorage.setItem(this.KEYS.users, JSON.stringify(cleaned));
+    }
+  },
+
   logout() {
     localStorage.removeItem(this.KEYS.currentUser);
   },
 
   cleanUsername(name) {
-    return (name || '').trim().toLowerCase().replace(/[^a-z0-9_\-àèìòù ]/gi, '').trim();
+    return (name || '').trim().toLowerCase().replace(/[^a-z0-9_\-àèìòù]/gi, '');
   },
 
   renameUser(oldName, newName) {

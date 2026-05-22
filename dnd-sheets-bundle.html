@@ -2535,6 +2535,19 @@ code {
   .player-type-grid { grid-template-columns: 1fr; }
 }
 
+/* User chip — character count badge */
+.user-chip-count {
+  margin-left: auto;
+  font-size: 0.66rem;
+  font-family: var(--font-h);
+  letter-spacing: 0.04em;
+  background: rgba(201,168,76,0.12);
+  border: 1px solid var(--gold-dim);
+  color: var(--gold);
+  border-radius: 50px;
+  padding: 1px 8px;
+}
+
   </style>
 </head>
 <body>
@@ -3604,8 +3617,7 @@ const Storage = {
   },
 
   setCurrentUser(username) {
-    if (!username) return false;
-    const clean = username.trim().toLowerCase().replace(/[^a-z0-9_\-àèìòù]/gi, '');
+    const clean = this.cleanUsername(username);
     if (!clean) return false;
     localStorage.setItem(this.KEYS.currentUser, clean);
     const users = this.getUsers();
@@ -3622,12 +3634,61 @@ const Storage = {
     } catch { return []; }
   },
 
+  // Ripara stati incoerenti (chiavi utente con spazi create da una vecchia
+  // versione di renameUser). Unisce i personaggi sotto la chiave pulita.
+  // Idempotente: se non c'è nulla da riparare non scrive niente.
+  migrate() {
+    const rawUsers = this.getUsers();
+    const cur = localStorage.getItem(this.KEYS.currentUser);
+    const all = new Set(rawUsers);
+    if (cur) all.add(cur);
+
+    let touched = false;
+    all.forEach(oldName => {
+      const newName = this.cleanUsername(oldName);
+      if (!newName || newName === oldName) return;
+      touched = true;
+      // Unisce i personaggi oldName -> newName (per id, senza perdite)
+      const byId = {};
+      this.getCharacters(newName).forEach(c => { if (c && c.id) byId[c.id] = c; });
+      this.getCharacters(oldName).forEach(c => {
+        if (!c) return;
+        if (!c.id) c.id = this.generateId();
+        byId[c.id] = c;
+      });
+      localStorage.setItem(this.KEYS.characters(newName), JSON.stringify(Object.values(byId)));
+      localStorage.removeItem(this.KEYS.characters(oldName));
+      // Metadati
+      const meta = this._allMeta();
+      if (meta[oldName]) {
+        if (!meta[newName]) meta[newName] = meta[oldName];
+        delete meta[oldName];
+        this._saveMeta(meta);
+      }
+      // Utente corrente
+      if (localStorage.getItem(this.KEYS.currentUser) === oldName) {
+        localStorage.setItem(this.KEYS.currentUser, newName);
+      }
+    });
+
+    if (touched) {
+      const cleaned = [];
+      rawUsers.forEach(u => {
+        const n = this.cleanUsername(u) || u;
+        if (n && !cleaned.includes(n)) cleaned.push(n);
+      });
+      const c = localStorage.getItem(this.KEYS.currentUser);
+      if (c && !cleaned.includes(c)) cleaned.push(c);
+      localStorage.setItem(this.KEYS.users, JSON.stringify(cleaned));
+    }
+  },
+
   logout() {
     localStorage.removeItem(this.KEYS.currentUser);
   },
 
   cleanUsername(name) {
-    return (name || '').trim().toLowerCase().replace(/[^a-z0-9_\-àèìòù ]/gi, '').trim();
+    return (name || '').trim().toLowerCase().replace(/[^a-z0-9_\-àèìòù]/gi, '');
   },
 
   renameUser(oldName, newName) {
@@ -4910,12 +4971,14 @@ function initIndexPage() {
     }
     ul.innerHTML = '';
     users.forEach(u => {
+      const count = Storage.getCharacters(u).length;
       const chip = document.createElement('div');
       chip.className = 'user-chip';
-      chip.innerHTML = `<span class="user-chip-icon">⚔</span> ${u}`;
+      chip.innerHTML = `<span class="user-chip-icon">⚔</span> <span>${u}</span>` +
+        `<span class="user-chip-count">${count} pg</span>`;
       chip.addEventListener('click', () => {
-        Storage.setCurrentUser(u);
-        showWelcome(u);
+        const cleaned = Storage.setCurrentUser(u);
+        showWelcome(cleaned || u);
       });
       ul.appendChild(chip);
     });
@@ -4984,7 +5047,7 @@ function initCharsPage() {
 
   renderChars();
 
-  document.querySelectorAll('.btn-logout').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('button.btn-logout').forEach(b => b.addEventListener('click', () => {
     Storage.logout();
     location.hash='index';
   }));
@@ -5087,7 +5150,7 @@ function initCreatePage() {
   const usernameEl = document.getElementById('nav-username');
   if (usernameEl) usernameEl.textContent = user;
 
-  document.querySelectorAll('.btn-logout').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('button.btn-logout').forEach(b => b.addEventListener('click', () => {
     Storage.logout(); location.hash='index';
   }));
 
@@ -6756,7 +6819,7 @@ function initViewPage() {
   applyClassTheme(theme);
   initParticles('particles-canvas', theme);
 
-  document.querySelectorAll('.btn-logout').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('button.btn-logout').forEach(b => b.addEventListener('click', () => {
     Storage.logout(); location.hash='index';
   }));
 
@@ -6965,7 +7028,7 @@ function initProfilePage() {
   const navUser = document.getElementById('nav-username');
   if (navUser) navUser.textContent = user;
 
-  document.querySelectorAll('.btn-logout').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('button.btn-logout').forEach(b => b.addEventListener('click', () => {
     Storage.logout(); location.hash='index';
   }));
 
@@ -7053,6 +7116,9 @@ function initProfilePage() {
 // =============================================
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Ripara eventuali profili incoerenti prima di tutto
+  try { Storage.migrate(); } catch (e) { console.error('migrate', e); }
+
   const body = document.body;
   const page = body.dataset.page;
 
